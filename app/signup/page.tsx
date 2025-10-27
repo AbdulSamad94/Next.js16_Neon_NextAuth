@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import Link from "next/link";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -9,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Mail, Lock, User } from "lucide-react";
-import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -20,29 +17,72 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { data: session, status } = useSession();
+  const [loading, setLoading] = useState(false);
+
+  const { status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated" && session) {
-      router.push("/"); // Redirect to home if already logged in
-    }
-  }, [status, session, router]);
+    if (status === "authenticated") router.push("/");
+  }, [status, router]);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!name || !email || !password || !confirmPassword) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    if (password.length < 8) {
+      alert("Password must be at least 8 characters long");
+      return;
+    }
+
     if (password !== confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
-    console.log({ name, email, password });
-    alert("Account created! (This is a demo)");
+
+    try {
+      setLoading(true);
+
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Signup failed");
+        setLoading(false);
+        return;
+      }
+
+      // Automatically log in after signup
+      const loginRes = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (loginRes?.ok) {
+        router.push("/");
+      } else {
+        alert("Signup successful! Please log in manually.");
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Only render content if not authenticated
-  if (status === "authenticated") {
-    return null; // Redirect will happen via useEffect
-  }
+  if (status === "authenticated") return null;
 
   return (
     <ProtectedRoute requireAuth={false} redirectPath="/">
@@ -149,8 +189,8 @@ export default function Signup() {
                 </label>
 
                 {/* Submit Button */}
-                <Button type="submit" className="w-full">
-                  Create Account
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Creating Account..." : "Create Account"}
                 </Button>
               </form>
 
@@ -168,10 +208,18 @@ export default function Signup() {
 
               {/* Social Signup */}
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" className="w-full bg-transparent">
+                <Button
+                  variant="outline"
+                  className="w-full bg-transparent"
+                  onClick={() => signIn("github", { callbackUrl: "/" })}
+                >
                   GitHub
                 </Button>
-                <Button variant="outline" className="w-full bg-transparent">
+                <Button
+                  variant="outline"
+                  className="w-full bg-transparent"
+                  onClick={() => signIn("google", { callbackUrl: "/" })}
+                >
                   Google
                 </Button>
               </div>
