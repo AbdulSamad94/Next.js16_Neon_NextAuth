@@ -5,92 +5,113 @@ import { Footer } from "@/components/footer";
 import { FeaturedBlog } from "@/components/featured-blog";
 import { BlogCard } from "@/components/blog-card";
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
-const featuredBlog = {
-  id: "1",
-  title: "The Future of Web Development: Trends to Watch in 2025",
-  excerpt:
-    "Explore the emerging technologies and practices that will shape web development in the coming year.",
-  author: "Sarah Chen",
-  date: "Oct 24, 2025",
-  tags: ["Web Dev", "Trends", "Technology"],
-  coverImage: "/modern-web-dev-workspace.png",
-  readTime: 8,
-};
+interface Author {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+}
 
-const blogs = [
-  {
-    id: "2",
-    title: "Mastering React Server Components",
-    excerpt:
-      "A deep dive into React Server Components and how they can improve your application performance.",
-    author: "Alex Johnson",
-    date: "Oct 22, 2025",
-    tags: ["React", "Performance"],
-    coverImage: "/react-code-editor.jpg",
-    readTime: 6,
-  },
-  {
-    id: "3",
-    title: "Building Scalable APIs with Next.js",
-    excerpt:
-      "Learn best practices for building robust and scalable APIs using Next.js route handlers.",
-    author: "Emma Davis",
-    date: "Oct 20, 2025",
-    tags: ["Next.js", "API", "Backend"],
-    coverImage: "/api-architecture-diagram.jpg",
-    readTime: 7,
-  },
-  {
-    id: "4",
-    title: "CSS Grid vs Flexbox: When to Use Each",
-    excerpt:
-      "Understanding the differences and best use cases for CSS Grid and Flexbox in modern layouts.",
-    author: "Michael Park",
-    date: "Oct 18, 2025",
-    tags: ["CSS", "Layout", "Design"],
-    coverImage: "/css-layout-design.jpg",
-    readTime: 5,
-  },
-  {
-    id: "5",
-    title: "TypeScript Tips for Better Code Quality",
-    excerpt:
-      "Practical TypeScript patterns and techniques to write more maintainable and type-safe code.",
-    author: "Lisa Wong",
-    date: "Oct 16, 2025",
-    tags: ["TypeScript", "Best Practices"],
-    coverImage: "/typescript-code.png",
-    readTime: 6,
-  },
-  {
-    id: "6",
-    title: "Optimizing Web Performance: A Complete Guide",
-    excerpt:
-      "Comprehensive strategies for improving your website performance and user experience.",
-    author: "James Miller",
-    date: "Oct 14, 2025",
-    tags: ["Performance", "Optimization"],
-    coverImage: "/performance-metrics-dashboard.png",
-    readTime: 9,
-  },
-  {
-    id: "7",
-    title: "Getting Started with Tailwind CSS",
-    excerpt:
-      "An introduction to utility-first CSS and how Tailwind CSS can speed up your development.",
-    author: "Nina Patel",
-    date: "Oct 12, 2025",
-    tags: ["CSS", "Tailwind", "Tutorial"],
-    coverImage: "/tailwind-css-design.png",
-    readTime: 5,
-  },
-];
+interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  coverImage: string | null;
+  status: string;
+  createdAt: string;
+  author: Author;
+}
 
 export default function Home() {
-  const { data: session } = useSession();
-  console.log(session?.user?.email);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchBlogs() {
+      try {
+        const response = await fetch("/api/blogs");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch blogs");
+        }
+
+        // Filter only published blogs
+        const publishedBlogs = data.posts.filter(
+          (post: Blog) => post.status === "published"
+        );
+        setBlogs(publishedBlogs);
+      } catch (err) {
+        console.error("Error fetching blogs:", err);
+        setError(err instanceof Error ? err.message : "Failed to load blogs");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBlogs();
+  }, []);
+
+  // Helper function to calculate read time
+  const calculateReadTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const textContent = content.replace(/<[^>]*>/g, ""); // Strip HTML
+    const wordCount = textContent.split(/\s+/).length;
+    return Math.ceil(wordCount / wordsPerMinute);
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  // Helper function to extract tags (you can modify this based on your needs)
+  const extractTags = (content: string) => {
+    console.log(content);
+    return ["Blog"];
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <p className="text-destructive text-lg">Error loading blogs</p>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const featuredBlog = blogs[0]; // First blog as featured
+  const otherBlogs = blogs.slice(1); // Rest of the blogs
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -115,32 +136,78 @@ export default function Home() {
         </motion.section>
 
         {/* Featured Blog */}
-        <section className="mb-20">
-          <FeaturedBlog {...featuredBlog} />
-        </section>
+        {featuredBlog && (
+          <section className="mb-20">
+            <FeaturedBlog
+              id={featuredBlog.slug}
+              title={featuredBlog.title}
+              excerpt={
+                featuredBlog.excerpt ||
+                featuredBlog.content.replace(/<[^>]*>/g, "").substring(0, 200) +
+                  "..."
+              }
+              author={featuredBlog.author.name || "Anonymous"}
+              date={formatDate(featuredBlog.createdAt)}
+              tags={extractTags(featuredBlog.content)}
+              coverImage={
+                featuredBlog.coverImage ||
+                "/placeholder.svg?height=400&width=800"
+              }
+              readTime={calculateReadTime(featuredBlog.content)}
+            />
+          </section>
+        )}
 
         {/* Blog Grid */}
-        <section>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <h2 className="text-2xl font-bold mb-8">Latest Articles</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {blogs.map((blog, index) => (
-                <motion.div
-                  key={blog.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <BlogCard {...blog} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </section>
+        {otherBlogs.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <h2 className="text-2xl font-bold mb-8">Latest Articles</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {otherBlogs.map((blog, index) => (
+                  <motion.div
+                    key={blog.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <BlogCard
+                      id={blog.slug}
+                      title={blog.title}
+                      excerpt={
+                        blog.excerpt ||
+                        blog.content.replace(/<[^>]*>/g, "").substring(0, 150) +
+                          "..."
+                      }
+                      author={blog.author.name || "Anonymous"}
+                      date={formatDate(blog.createdAt)}
+                      tags={extractTags(blog.content)}
+                      coverImage={
+                        blog.coverImage ||
+                        "/placeholder.svg?height=400&width=600"
+                      }
+                      readTime={calculateReadTime(blog.content)}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* Empty State */}
+        {blogs.length === 0 && (
+          <div className="text-center py-20">
+            <h3 className="text-2xl font-bold mb-4">No blogs yet</h3>
+            <p className="text-muted-foreground">
+              Be the first to share your story!
+            </p>
+          </div>
+        )}
       </main>
 
       <Footer />

@@ -15,6 +15,20 @@
       "when": 1761595486216,
       "tag": "0001_omniscient_venom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761667517250,
+      "tag": "0002_overjoyed_nextwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1761669733049,
+      "tag": "0003_thankful_azazel",
+      "breakpoints": true
     }
   ]
 }
