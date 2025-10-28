@@ -25,5 +25,6 @@ export function formatDate(dateString: string) {
 
 // Helper function to extract tags (you can modify this based on your needs)
 export function extractTags(content: string) {
+  console.log(content);
   return ["Blog"];
 }

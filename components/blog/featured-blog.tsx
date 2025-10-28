@@ -1,21 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { motion } from "framer-motion";
+import { BlogCoverImage } from "@/components/blog/blog-cover-image";
+import { BlogTags } from "@/components/blog/blog-tags";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-
-interface FeaturedBlogProps {
-  id: string;
-  title: string;
-  excerpt: string;
-  author: string;
-  date: string;
-  tags: string[];
-  coverImage: string;
-  readTime: number;
-}
+import { FeaturedBlogProps } from "@/lib/types";
 
 export function FeaturedBlog({
   id,
@@ -35,26 +26,15 @@ export function FeaturedBlog({
     >
       <Link href={`/blog/${id}`}>
         <article className="group cursor-pointer grid md:grid-cols-2 gap-8 items-center mb-16">
-          <div className="relative aspect-video md:aspect-auto md:h-96 overflow-hidden rounded-xl">
-            <Image
-              src={coverImage || "/placeholder.svg"}
-              alt={title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          </div>
+          <BlogCoverImage
+            src={coverImage || "/placeholder.svg"}
+            alt={title}
+            aspect="video"
+            className="md:h-96"
+          />
           <div className="space-y-6">
             <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-medium"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              <BlogTags tags={tags} variant="featured" />
               <h2 className="text-3xl md:text-4xl font-bold leading-tight group-hover:text-primary transition">
                 {title}
               </h2>

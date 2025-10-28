@@ -5,8 +5,9 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader } from "@/components/shared/loader";
 import { motion } from "framer-motion";
-import { Upload, Eye, EyeOff, Loader2, X } from "lucide-react";
+import { Upload, Eye, EyeOff, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -278,7 +279,7 @@ export default function CreateBlog() {
                   >
                     {savingDraft ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader className="w-4 h-4 mr-2" size="sm" />
                         Saving...
                       </>
                     ) : (
@@ -291,7 +292,7 @@ export default function CreateBlog() {
                   >
                     {publishing ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader className="w-4 h-4 mr-2" size="sm" />
                         Publishing...
                       </>
                     ) : (
