@@ -2,30 +2,15 @@
 
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { FeaturedBlog } from "@/components/featured-blog";
-import { BlogCard } from "@/components/blog-card";
+import { FeaturedBlog } from "@/components/blog/featured-blog";
+import { BlogCard } from "@/components/blog/blog-card";
+import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
+import { Loader } from "@/components/shared/loader";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
-
-interface Author {
-  id: string;
-  name: string | null;
-  email: string;
-  image: string | null;
-}
-
-interface Blog {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  coverImage: string | null;
-  status: string;
-  createdAt: string;
-  author: Author;
-}
+import { calculateReadTime, formatDate, extractTags } from "@/lib/utils";
+import { Author, Blog } from "@/lib/types";
 
 export default function Home() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -58,36 +43,12 @@ export default function Home() {
     fetchBlogs();
   }, []);
 
-  // Helper function to calculate read time
-  const calculateReadTime = (content: string) => {
-    const wordsPerMinute = 200;
-    const textContent = content.replace(/<[^>]*>/g, ""); // Strip HTML
-    const wordCount = textContent.split(/\s+/).length;
-    return Math.ceil(wordCount / wordsPerMinute);
-  };
-
-  // Helper function to format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  // Helper function to extract tags (you can modify this based on your needs)
-  const extractTags = (content: string) => {
-    console.log(content);
-    return ["Blog"];
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader size="lg" />
         </div>
         <Footer />
       </div>
@@ -98,12 +59,12 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4">
-            <p className="text-destructive text-lg">Error loading blogs</p>
-            <p className="text-muted-foreground">{error}</p>
-          </div>
-        </div>
+        <ErrorState 
+          message="Failed to load blogs" 
+          error={error} 
+          showBackButton={true}
+          className="min-h-[60vh]"
+        />
         <Footer />
       </div>
     );
@@ -201,12 +162,10 @@ export default function Home() {
 
         {/* Empty State */}
         {blogs.length === 0 && (
-          <div className="text-center py-20">
-            <h3 className="text-2xl font-bold mb-4">No blogs yet</h3>
-            <p className="text-muted-foreground">
-              Be the first to share your story!
-            </p>
-          </div>
+          <EmptyState 
+            title="No blogs yet" 
+            description="Be the first to share your story!" 
+          />
         )}
       </main>
 

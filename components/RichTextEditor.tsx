@@ -20,10 +20,7 @@ import {
   Type,
 } from "lucide-react";
 import { useCallback } from "react";
-interface RichTextEditorProps {
-  content: string;
-  onChange: (content: string) => void;
-}
+import { RichTextEditorProps } from "@/lib/types";
 
 export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const editor = useEditor({
@@ -52,7 +49,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     editorProps: {
       attributes: {
         class:
-          "prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] p-4 prose-headings:font-bold prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl prose-p:text-base prose-a:text-primary prose-strong:font-bold prose-em:italic prose-ul:list-disc prose-ol:list-decimal",
+          "ProseMirror prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] p-4",
       },
     },
   });

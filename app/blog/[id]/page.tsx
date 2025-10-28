@@ -2,38 +2,23 @@
 
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { BlogCard } from "@/components/blog-card";
+import { BlogCard } from "@/components/blog/blog-card";
+import { BlogCoverImage } from "@/components/blog/blog-cover-image";
+import { BlogContent } from "@/components/blog/blog-content";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Loader } from "@/components/shared/loader";
+import { ErrorState } from "@/components/shared/error-state";
 import { motion } from "framer-motion";
-import Image from "next/image";
-import { Heart, Share2, Loader2, ArrowLeft } from "lucide-react";
+import { Heart, Share2, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
-import "./blog-content.css";
-
-interface Author {
-  id: string;
-  name: string | null;
-  email: string;
-  image: string | null;
-}
-
-interface Blog {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  coverImage: string | null;
-  status: string;
-  createdAt: string;
-  author: Author;
-}
+import { calculateReadTime, formatDate, extractTags } from "@/lib/utils";
+import { Author, Blog } from "@/lib/types";
 
 export default function BlogDetail({
   params,
@@ -131,35 +116,13 @@ export default function BlogDetail({
     }
   };
 
-  // Helper functions
-  const calculateReadTime = (content: string) => {
-    const wordsPerMinute = 200;
-    const textContent = content.replace(/<[^>]*>/g, "");
-    const wordCount = textContent.split(/\s+/).length;
-    return Math.ceil(wordCount / wordsPerMinute);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const extractTags = (content: string) => {
-    console.log(content);
-    return ["Blog"];
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <Toaster position="top-right" />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader size="lg" />
         </div>
         <Footer />
       </div>
@@ -171,17 +134,11 @@ export default function BlogDetail({
       <div className="min-h-screen bg-background">
         <Navbar />
         <Toaster position="top-right" />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4">
-            <p className="text-lg">Blog post not found</p>
-            <Link href="/">
-              <Button variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </div>
+        <ErrorState
+          message="Blog post not found"
+          showBackButton={true}
+          className="min-h-[60vh]"
+        />
         <Footer />
       </div>
     );
@@ -266,161 +223,15 @@ export default function BlogDetail({
 
           {/* Cover Image */}
           {blog.coverImage && (
-            <div className="relative aspect-video rounded-xl overflow-hidden">
-              <Image
-                src={blog.coverImage}
-                alt={blog.title}
-                fill
-                className="object-cover"
-              />
-            </div>
+            <BlogCoverImage
+              src={blog.coverImage}
+              alt={blog.title}
+              aspect="video"
+            />
           )}
 
           {/* Content */}
-          <div className="prose prose-lg dark:prose-invert max-w-none">
-            <style jsx global>{`
-              .prose h1 {
-                font-size: 2.25rem;
-                font-weight: 700;
-                line-height: 2.5rem;
-                margin-top: 2rem;
-                margin-bottom: 1rem;
-              }
-
-              .prose h2 {
-                font-size: 1.875rem;
-                font-weight: 700;
-                line-height: 2.25rem;
-                margin-top: 2rem;
-                margin-bottom: 1rem;
-              }
-
-              .prose h3 {
-                font-size: 1.5rem;
-                font-weight: 600;
-                line-height: 2rem;
-                margin-top: 1.5rem;
-                margin-bottom: 0.75rem;
-              }
-
-              .prose h4 {
-                font-size: 1.25rem;
-                font-weight: 600;
-                line-height: 1.75rem;
-                margin-top: 1.5rem;
-                margin-bottom: 0.75rem;
-              }
-
-              .prose p {
-                font-size: 1.125rem;
-                line-height: 1.875rem;
-                margin-bottom: 1.25rem;
-                color: hsl(var(--foreground));
-              }
-
-              .prose strong {
-                font-weight: 700;
-                color: hsl(var(--foreground));
-              }
-
-              .prose em {
-                font-style: italic;
-              }
-
-              .prose ul {
-                list-style-type: disc;
-                padding-left: 1.75rem;
-                margin-bottom: 1.25rem;
-                margin-top: 1rem;
-              }
-
-              .prose ol {
-                list-style-type: decimal;
-                padding-left: 1.75rem;
-                margin-bottom: 1.25rem;
-                margin-top: 1rem;
-              }
-
-              .prose li {
-                margin-bottom: 0.5rem;
-                line-height: 1.75rem;
-              }
-
-              .prose li p {
-                margin-bottom: 0.5rem;
-              }
-
-              .prose a {
-                color: hsl(var(--primary));
-                text-decoration: underline;
-                font-weight: 500;
-              }
-
-              .prose a:hover {
-                color: hsl(var(--primary));
-                opacity: 0.8;
-              }
-
-              .prose code {
-                background-color: hsl(var(--muted));
-                padding: 0.125rem 0.375rem;
-                border-radius: 0.25rem;
-                font-size: 0.875em;
-                font-family: ui-monospace, monospace;
-              }
-
-              .prose pre {
-                background-color: hsl(var(--muted));
-                padding: 1rem;
-                border-radius: 0.5rem;
-                overflow-x: auto;
-                margin-bottom: 1.25rem;
-              }
-
-              .prose pre code {
-                background-color: transparent;
-                padding: 0;
-              }
-
-              .prose blockquote {
-                border-left: 4px solid hsl(var(--primary));
-                padding-left: 1rem;
-                font-style: italic;
-                margin: 1.5rem 0;
-                color: hsl(var(--muted-foreground));
-              }
-
-              .prose hr {
-                border: none;
-                border-top: 1px solid hsl(var(--border));
-                margin: 2rem 0;
-              }
-
-              .prose img {
-                border-radius: 0.5rem;
-                margin: 1.5rem 0;
-              }
-
-              .prose table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 1.5rem 0;
-              }
-
-              .prose th,
-              .prose td {
-                border: 1px solid hsl(var(--border));
-                padding: 0.75rem;
-                text-align: left;
-              }
-
-              .prose th {
-                background-color: hsl(var(--muted));
-                font-weight: 600;
-              }
-            `}</style>
-            <div dangerouslySetInnerHTML={{ __html: blog.content }} />
-          </div>
+          <BlogContent content={blog.content} />
 
           {/* Comments Section */}
           <div className="border-t border-border pt-12 space-y-8">
