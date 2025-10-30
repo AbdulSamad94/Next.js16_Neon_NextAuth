@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { authApi } from "@/lib/data";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -47,19 +48,8 @@ export default function Signup() {
     try {
       setLoading(true);
 
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Signup failed");
-        setLoading(false);
-        return;
-      }
+      // Create user using centralized API service
+      await authApi.signup({ name, email, password });
 
       // Automatically log in after signup
       const loginRes = await signIn("credentials", {

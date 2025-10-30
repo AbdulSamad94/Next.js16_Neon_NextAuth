@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { calculateReadTime, formatDate, extractTags } from "@/lib/utils";
 import { Blog } from "@/lib/types";
+import { blogApi } from "@/lib/data";
 
 export default function Home() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -20,12 +21,8 @@ export default function Home() {
   useEffect(() => {
     async function fetchBlogs() {
       try {
-        const response = await fetch("/api/blogs");
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch blogs");
-        }
+        // Fetch blogs using centralized API service
+        const data = await blogApi.getAllBlogs();
 
         // Filter only published blogs
         const publishedBlogs = data.posts.filter(
