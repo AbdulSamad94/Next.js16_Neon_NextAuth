@@ -10,7 +10,7 @@ import { Loader } from "@/components/shared/loader";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { calculateReadTime, formatDate, extractTags } from "@/lib/utils";
-import { Author, Blog } from "@/lib/types";
+import { Blog } from "@/lib/types";
 
 export default function Home() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -59,9 +59,9 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <ErrorState 
-          message="Failed to load blogs" 
-          error={error} 
+        <ErrorState
+          message="Failed to load blogs"
+          error={error}
           showBackButton={true}
           className="min-h-[60vh]"
         />
@@ -162,9 +162,9 @@ export default function Home() {
 
         {/* Empty State */}
         {blogs.length === 0 && (
-          <EmptyState 
-            title="No blogs yet" 
-            description="Be the first to share your story!" 
+          <EmptyState
+            title="No blogs yet"
+            description="Be the first to share your story!"
           />
         )}
       </main>

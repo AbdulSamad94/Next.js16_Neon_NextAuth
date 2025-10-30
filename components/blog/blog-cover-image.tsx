@@ -21,7 +21,7 @@ export function BlogCoverImage({
   }
 
   return (
-    <div className={cn(`${aspectClasses[aspect]} rounded-xl overflow-hidden`, className)}>
+    <div className={cn(`${aspectClasses[aspect]} rounded-xl overflow-hidden relative`, className)}>
       <Image
         src={src}
         alt={alt}

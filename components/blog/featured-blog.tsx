@@ -30,7 +30,6 @@ export function FeaturedBlog({
             src={coverImage || "/placeholder.svg"}
             alt={title}
             aspect="video"
-            className="md:h-96"
           />
           <div className="space-y-6">
             <div className="space-y-2">

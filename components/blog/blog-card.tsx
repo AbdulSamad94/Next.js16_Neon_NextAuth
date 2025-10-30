@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { BlogMetadata } from "@/components/blog/blog-metadata";
 import { BlogCoverImage } from "@/components/blog/blog-cover-image";
 import { BlogTags } from "@/components/blog/blog-tags";
@@ -23,11 +22,11 @@ export function BlogCard({
       <Link href={`/blog/${id}`}>
         <article className="group cursor-pointer h-full flex flex-col">
           <div className="overflow-hidden rounded-lg bg-secondary mb-4 aspect-video relative flex-shrink-0">
-            <Image
+            <BlogCoverImage
               src={coverImage || "/placeholder.svg"}
               alt={title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              aspect="video"
+              className="group-hover:scale-105 transition-transform duration-300"
             />
           </div>
           <div className="flex-grow space-y-3">
