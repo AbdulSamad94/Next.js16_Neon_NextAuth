@@ -15,6 +15,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import toast, { Toaster } from "react-hot-toast";
 import Image from "next/image";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { blogApi } from "@/lib/data";
 
 export default function CreateBlog() {
   const [title, setTitle] = useState("");
@@ -108,19 +109,8 @@ export default function CreateBlog() {
         payload.coverImageType = coverImageFile.type;
       }
 
-      const response = await fetch("/api/blogs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create blog");
-      }
+      // Create blog using centralized API service
+      await blogApi.createBlog(payload);
 
       toast.success(
         status === "draft"

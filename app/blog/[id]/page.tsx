@@ -18,7 +18,8 @@ import { useSession } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import { calculateReadTime, formatDate, extractTags } from "@/lib/utils";
-import { Author, Blog } from "@/lib/types";
+import { Blog } from "@/lib/types";
+import { blogApi } from "@/lib/data";
 
 export default function BlogDetail({
   params,
@@ -50,27 +51,17 @@ export default function BlogDetail({
 
     async function fetchBlog() {
       try {
-        // Fetch current blog
-        const response = await fetch(`/api/blogs/${slug}`);
-        const data = await response.json();
+        // Fetch current blog using centralized API service
+        const blogResponse = await blogApi.getBlogById(slug);
+        setBlog(blogResponse.post);
 
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch blog");
-        }
-
-        setBlog(data.post);
-
-        // Fetch all blogs for related posts
-        const allBlogsResponse = await fetch("/api/blogs");
-        const allBlogsData = await allBlogsResponse.json();
-
-        if (allBlogsResponse.ok) {
-          const publishedBlogs = allBlogsData.posts.filter(
-            (post: Blog) =>
-              post.status === "published" && post.id !== data.post.id
-          );
-          setRelatedBlogs(publishedBlogs.slice(0, 3));
-        }
+        // Fetch all blogs for related posts using centralized API service
+        const allBlogsResponse = await blogApi.getAllBlogs();
+        const publishedBlogs = allBlogsResponse.posts.filter(
+          (post: Blog) =>
+            post.status === "published" && post.id !== blogResponse.post.id
+        );
+        setRelatedBlogs(publishedBlogs.slice(0, 3));
       } catch (error) {
         console.error("Error fetching blog:", error);
         toast.error("Failed to load blog post");
