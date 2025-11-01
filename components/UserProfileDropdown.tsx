@@ -58,20 +58,11 @@ export function UserProfileDropdown() {
         <div className="py-1">
           <DropdownMenuItem asChild>
             <Link
-              href="/dashboard"
+              href="/settings"
               className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors duration-150 rounded-none"
             >
               <User className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm">My Profile</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link
-              href="/settings"
-              className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors duration-150 rounded-none"
-            >
-              <Settings className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">Settings</span>
             </Link>
           </DropdownMenuItem>
         </div>

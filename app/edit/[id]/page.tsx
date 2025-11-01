@@ -7,39 +7,285 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { Upload, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { Suspense } from "react";
+import { blogApi } from "@/lib/data";
+import { extractTags } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data - replace with real data from backend
-const blogData = {
-  title: "The Future of Web Development: Trends to Watch in 2025",
-  excerpt:
-    "Explore the emerging technologies and practices that will shape web development in the coming year.",
-  content: "The web development landscape is constantly evolving...",
-  tags: "Web Dev, Trends, Technology",
-};
+// Component for the blog editing form
+function EditBlogContent({ blogId }: { blogId: string }) {
+  const [title, setTitle] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [content, setContent] = useState("");
+  const [tags, setTags] = useState("");
+  const [preview, setPreview] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchBlog() {
+      try {
+        // Fetch blog by ID using centralized API service
+        const response = await blogApi.getBlogById(blogId);
+        const blog = response.post;
+        setTitle(blog.title);
+        setExcerpt(blog.excerpt || "");
+        setContent(blog.content);
+        setTags(extractTags(blog.content).join(", "));
+      } catch (err) {
+        console.error("Error fetching blog:", err);
+        setError(err instanceof Error ? err.message : "Failed to load blog");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (blogId) {
+      fetchBlog();
+    }
+  }, [blogId]);
+
+  const handleUpdate = async () => {
+    if (!title.trim()) {
+      alert("Please enter a title");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Update blog using centralized API service
+      await blogApi.updateBlog(blogId, {
+        title,
+        excerpt: excerpt || undefined,
+        content,
+      });
+
+      alert("Blog updated successfully!");
+      window.location.href = `/blog/${blogId}`;
+    } catch (err) {
+      console.error("Error updating blog:", err);
+      alert(err instanceof Error ? err.message : "Failed to update blog");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!title.trim()) {
+      alert("Please enter a title");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Update blog as draft using centralized API service
+      await blogApi.updateBlog(blogId, {
+        title,
+        excerpt: excerpt || undefined,
+        content,
+      });
+
+      alert("Draft saved successfully!");
+    } catch (err) {
+      console.error("Error saving draft:", err);
+      alert(err instanceof Error ? err.message : "Failed to save draft");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold">Error Loading Blog</h2>
+        <p className="text-muted-foreground mt-2">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-8"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Edit Blog</h1>
+          <p className="text-muted-foreground mt-2">Update your blog post</p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setPreview(!preview)}
+            className="gap-2"
+            disabled={loading}
+          >
+            {preview ? (
+              <>
+                <EyeOff className="w-4 h-4" />
+                Edit
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4" />
+                Preview
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {!preview ? (
+        <div className="space-y-6">
+          {/* Cover Image Upload */}
+          <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition cursor-pointer">
+            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+            <p className="font-semibold">Update cover image</p>
+            <p className="text-sm text-muted-foreground">or drag and drop</p>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Title</label>
+            <Input
+              placeholder="Enter blog title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="text-lg"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Excerpt */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Excerpt</label>
+            <Textarea
+              placeholder="Brief summary of your blog..."
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              rows={3}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Tags</label>
+            <Input
+              placeholder="Add tags separated by commas"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Content Editor */}
+          <div>
+            <label className="text-sm font-semibold mb-2 block">Content</label>
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary border-b border-border p-3 flex gap-2 flex-wrap">
+                <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
+                  <strong>B</strong>
+                </button>
+                <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
+                  <em>I</em>
+                </button>
+                <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
+                  U
+                </button>
+                <div className="w-px bg-border mx-1" />
+                <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
+                  H1
+                </button>
+                <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
+                  H2
+                </button>
+                <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
+                  • List
+                </button>
+              </div>
+              <Textarea
+                placeholder="Write your blog content here..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="border-0 resize-none rounded-none"
+                rows={15}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 justify-end pt-6">
+            <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={loading}
+            >
+              Save Draft
+            </Button>
+            <Button onClick={handleUpdate} disabled={loading}>
+              {loading ? "Updating..." : "Update Blog"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <div className="bg-secondary rounded-lg p-8 space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Preview</p>
+              <h2 className="text-3xl font-bold">{title}</h2>
+            </div>
+            <p className="text-muted-foreground">{excerpt}</p>
+            {tags && (
+              <div className="flex flex-wrap gap-2 pt-4">
+                {tags.split(",").map((tag, index) => (
+                  <span
+                    key={index}
+                    className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full"
+                  >
+                    {tag.trim()}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
+            <p className="text-muted-foreground whitespace-pre-wrap">
+              {content}
+            </p>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
 
 export default function EditBlog({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const [title, setTitle] = useState(blogData.title);
-  const [excerpt, setExcerpt] = useState(blogData.excerpt);
-  const [content, setContent] = useState(blogData.content);
-  const [tags, setTags] = useState(blogData.tags);
-  const [preview, setPreview] = useState(false);
+  const [id, setId] = useState<string>("");
 
-  const handleUpdate = () => {
-    console.log({ title, excerpt, content, tags });
-    console.log(params);
-    alert("Blog updated! (This is a demo)");
-  };
-
-  const handleSaveDraft = () => {
-    console.log({ title, excerpt, content, tags });
-    alert("Draft saved! (This is a demo)");
-  };
+  useEffect(() => {
+    async function unwrapParams() {
+      const resolvedParams = await params;
+      setId(resolvedParams.id);
+    }
+    unwrapParams();
+  }, [params]);
 
   return (
     <ProtectedRoute>
@@ -47,162 +293,62 @@ export default function EditBlog({
         <Navbar />
 
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-8"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Edit Blog</h1>
-                <p className="text-muted-foreground mt-2">
-                  Update your blog post
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setPreview(!preview)}
-                  className="gap-2"
-                >
-                  {preview ? (
-                    <>
-                      <EyeOff className="w-4 h-4" />
-                      Edit
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-4 h-4" />
-                      Preview
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {!preview ? (
-              <div className="space-y-6">
-                {/* Cover Image Upload */}
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition cursor-pointer">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="font-semibold">Update cover image</p>
-                  <p className="text-sm text-muted-foreground">
-                    or drag and drop
-                  </p>
-                </div>
-
-                {/* Title */}
-                <div>
-                  <label className="text-sm font-semibold mb-2 block">
-                    Title
-                  </label>
-                  <Input
-                    placeholder="Enter blog title..."
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="text-lg"
-                  />
-                </div>
-
-                {/* Excerpt */}
-                <div>
-                  <label className="text-sm font-semibold mb-2 block">
-                    Excerpt
-                  </label>
-                  <Textarea
-                    placeholder="Brief summary of your blog..."
-                    value={excerpt}
-                    onChange={(e) => setExcerpt(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-
-                {/* Tags */}
-                <div>
-                  <label className="text-sm font-semibold mb-2 block">Tags</label>
-                  <Input
-                    placeholder="Add tags separated by commas"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                  />
-                </div>
-
-                {/* Content Editor */}
-                <div>
-                  <label className="text-sm font-semibold mb-2 block">
-                    Content
-                  </label>
-                  <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="bg-secondary border-b border-border p-3 flex gap-2 flex-wrap">
-                      <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
-                        <strong>B</strong>
-                      </button>
-                      <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
-                        <em>I</em>
-                      </button>
-                      <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
-                        U
-                      </button>
-                      <div className="w-px bg-border mx-1" />
-                      <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
-                        H1
-                      </button>
-                      <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
-                        H2
-                      </button>
-                      <button className="px-3 py-1 hover:bg-muted rounded text-sm font-medium">
-                        • List
-                      </button>
-                    </div>
-                    <Textarea
-                      placeholder="Write your blog content here..."
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      className="border-0 resize-none rounded-none"
-                      rows={15}
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 justify-end pt-6">
-                  <Button variant="outline" onClick={handleSaveDraft}>
-                    Save Draft
-                  </Button>
-                  <Button onClick={handleUpdate}>Update Blog</Button>
-                </div>
-              </div>
-            ) : (
+          <Suspense
+            fallback={
               <div className="space-y-8">
-                <div className="bg-secondary rounded-lg p-8 space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Preview</p>
-                    <h2 className="text-3xl font-bold">{title}</h2>
+                {/* Header Skeleton */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Skeleton className="h-8 w-64" />
+                    <Skeleton className="h-4 w-60 mt-2" />
                   </div>
-                  <p className="text-muted-foreground">{excerpt}</p>
-                  {tags && (
-                    <div className="flex flex-wrap gap-2 pt-4">
-                      {tags.split(",").map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full"
-                        >
-                          {tag.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <Skeleton className="h-10 w-32" />
                 </div>
-                <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
-                  <p className="text-muted-foreground whitespace-pre-wrap">
-                    {content}
-                  </p>
+
+                {/* Cover Image Skeleton */}
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                  <Skeleton className="h-8 w-8 mx-auto" />
+                  <Skeleton className="h-5 w-40 mt-2" />
+                  <Skeleton className="h-4 w-48 mt-1" />
+                </div>
+
+                {/* Title Skeleton */}
+                <div>
+                  <Skeleton className="h-4 w-16 mb-2" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+
+                {/* Excerpt Skeleton */}
+                <div>
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+
+                {/* Tags Skeleton */}
+                <div>
+                  <Skeleton className="h-4 w-12 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+
+                {/* Content Editor Skeleton */}
+                <div>
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                  </div>
+                </div>
+
+                {/* Action Buttons Skeleton */}
+                <div className="flex gap-3 justify-end pt-6">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-24" />
                 </div>
               </div>
-            )}
-          </motion.div>
+            }
+          >
+            <EditBlogContent blogId={id} />
+          </Suspense>
         </main>
 
         <Footer />
