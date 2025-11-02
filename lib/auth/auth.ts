@@ -100,15 +100,15 @@ export const authOptions: NextAuthOptions = {
 
                 if (dbUser) {
                     token.id = dbUser.id; // Use DB UUID
-                    token.name = dbUser.name;
+                    token.name = dbUser.name ?? "Unnamed User";
                     token.email = dbUser.email;
-                    token.image = dbUser.image;
+                    token.image = dbUser.image ?? DEFAULT_PROFILE_IMAGE;
                 } else {
                     // Fallback (shouldn’t happen)
                     token.id = user.id;
-                    token.name = user.name;
+                    token.name = user.name ?? "Unnamed User";
                     token.email = user.email;
-                    token.image = user.image;
+                    token.image = user.image ?? DEFAULT_PROFILE_IMAGE;
                 }
             }
 
