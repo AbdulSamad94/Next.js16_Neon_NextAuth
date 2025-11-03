@@ -32,6 +32,7 @@ interface BlogHeaderProps {
 
 export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
   const [liked, setLiked] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const sessionData = useSession();
   const currentSession = session || sessionData.data;
@@ -55,7 +56,9 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
 
   const handleDelete = async () => {
     try {
-      await blogApi.deleteBlog(blog.slug);
+      setIsDeleting(true);
+      // Use blogId instead of blog.slug since API now uses ID
+      await blogApi.deleteBlog(blogId);
 
       toast.success("Blog deleted successfully!");
       router.push("/");
@@ -64,16 +67,11 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete blog"
       );
+      setIsDeleting(false);
     }
   };
 
   const isAuthor = currentSession?.user?.id === blog.author.id;
-  console.log(
-    isAuthor,
-    session?.user.id,
-    currentSession?.user.id,
-    blog.author.id
-  );
 
   return (
     <div className="flex items-center justify-between border-b border-border pb-6">
@@ -103,14 +101,15 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
               </Button>
             </Link>
             <AlertDialog>
-              <AlertDialogTrigger>
+              <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  disabled={isDeleting}
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -118,13 +117,16 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete
-                    your account and remove your data from our servers.
+                    your blog post and remove it from our servers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>
-                    Continue
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Deleting..." : "Continue"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

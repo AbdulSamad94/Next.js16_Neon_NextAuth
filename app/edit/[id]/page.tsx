@@ -98,6 +98,9 @@ export default function EditBlog({
       setCoverImage(reader.result as string);
       setCoverImageFile(file);
     };
+    reader.onerror = () => {
+      toast.error("Failed to read image file");
+    };
     reader.readAsDataURL(file);
     toast.success("Image selected! It will upload when you save.");
   };
@@ -132,16 +135,17 @@ export default function EditBlog({
     try {
       setSaving(true);
 
-      // Prepare payload
-
-      const updateBlogWithImage = async (imageBase64?: string) => {
+      // Helper function to update blog
+      const updateBlog = async (imageBase64?: string) => {
         const payload: BlogPayload = {
           title,
           excerpt: excerpt || undefined,
           content,
           coverImage: coverImage || null,
+          status: "published", // Explicitly set to published
         };
 
+        // Only add base64 if we have a NEW file to upload
         if (imageBase64 && coverImageFile) {
           payload.coverImageBase64 = imageBase64;
           payload.coverImageType = coverImageFile.type;
@@ -153,23 +157,31 @@ export default function EditBlog({
         router.push(`/blog/${id}`);
       };
 
-      // Add base64 image if exists
-      if (coverImage && coverImageFile) {
-        // Convert image to base64 if it's a file
+      // If user selected a new image file, convert to base64
+      if (coverImageFile) {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64Data = reader.result as string;
-          updateBlogWithImage(base64Data);
+        reader.onloadend = async () => {
+          try {
+            const base64Data = reader.result as string;
+            await updateBlog(base64Data);
+          } catch (error) {
+            console.error("Error in FileReader callback:", error);
+            toast.error("Failed to process image");
+            setSaving(false);
+          }
+        };
+        reader.onerror = () => {
+          toast.error("Failed to read image file");
+          setSaving(false);
         };
         reader.readAsDataURL(coverImageFile);
       } else {
-        // Update blog using centralized API service without image
-        await updateBlogWithImage();
+        // No new image, just update with existing data
+        await updateBlog();
       }
     } catch (err) {
       console.error("Error updating blog:", err);
       toast.error(err instanceof Error ? err.message : "Failed to update blog");
-    } finally {
       setSaving(false);
     }
   };
@@ -183,9 +195,7 @@ export default function EditBlog({
     try {
       setSaving(true);
 
-      // Prepare payload
-
-      const updateBlogWithImage = async (imageBase64?: string) => {
+      const updateBlog = async (imageBase64?: string) => {
         const payload: BlogPayload = {
           title,
           excerpt: excerpt || undefined,
@@ -199,23 +209,29 @@ export default function EditBlog({
           payload.coverImageType = coverImageFile.type;
         }
 
-        // Update blog using centralized API service
         await blogApi.updateBlog(id, payload);
         toast.success("Draft saved successfully!");
       };
 
-      // Add base64 image if exists
-      if (coverImage && coverImageFile) {
-        // Convert image to base64 if it's a file
+      if (coverImageFile) {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64Data = reader.result as string;
-          updateBlogWithImage(base64Data);
+        reader.onloadend = async () => {
+          try {
+            const base64Data = reader.result as string;
+            await updateBlog(base64Data);
+          } catch (error) {
+            console.error("Error in FileReader callback:", error);
+            toast.error("Failed to process image");
+            setSaving(false);
+          }
+        };
+        reader.onerror = () => {
+          toast.error("Failed to read image file");
+          setSaving(false);
         };
         reader.readAsDataURL(coverImageFile);
       } else {
-        // Update blog using centralized API service without image
-        await updateBlogWithImage();
+        await updateBlog();
       }
     } catch (err) {
       console.error("Error saving draft:", err);

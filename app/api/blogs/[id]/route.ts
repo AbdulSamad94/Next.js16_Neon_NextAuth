@@ -1,27 +1,36 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
-import { posts, users } from "@/lib/db/schema/schema";
-import { eq, and } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { posts } from "@/lib/db/schema/schema";
+import { eq } from "drizzle-orm";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
+
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { slug } = await params;
+    const { id } = await params;
 
-    if (!slug) {
+    if (!id) {
       return NextResponse.json(
-        { error: "Slug is required" },
+        { error: "ID is required" },
         { status: 400 }
       );
     }
 
     const post = await db.query.posts.findFirst({
-      where: eq(posts.slug, slug),
+      where: eq(posts.slug, id),
       with: {
         author: {
           columns: {
@@ -43,10 +52,13 @@ export async function GET(
 
     // Only return published posts or drafts if requested by author
     if (post.status === "draft") {
-      return NextResponse.json(
-        { error: "Blog post not found" },
-        { status: 404 }
-      );
+      const session = await getServerSession(authOptions);
+      if (!session || post.authorId !== session.user.id) {
+        return NextResponse.json(
+          { error: "Blog post not found" },
+          { status: 404 }
+        );
+      }
     }
 
     return NextResponse.json({
@@ -64,10 +76,10 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { slug } = await params;
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -79,7 +91,7 @@ export async function DELETE(
 
     // Find the blog post
     const blogPost = await db.query.posts.findFirst({
-      where: eq(posts.slug, slug),
+      where: eq(posts.slug, id),
       with: {
         author: true
       }
@@ -101,10 +113,10 @@ export async function DELETE(
     }
 
     // Delete the blog post
-    await db.delete(posts).where(eq(posts.slug, slug));
+    await db.delete(posts).where(eq(posts.id, id));
 
     return NextResponse.json(
-      { message: "Blog post deleted successfully" },
+      { success: true, message: "Blog post deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
@@ -119,10 +131,10 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { slug } = await params;
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -132,15 +144,27 @@ export async function PUT(
       );
     }
 
-    // Parse request body
     const body = await request.json();
 
-    // Find the blog post
+    // Validate required fields
+    if (!body.title?.trim()) {
+      return NextResponse.json(
+        { error: "Title is required" },
+        { status: 400 }
+      );
+    }
+
+    if (body.title.length < 5) {
+      return NextResponse.json(
+        { error: "Title must be at least 5 characters" },
+        { status: 400 }
+      );
+    }
+
+    // Find the blog post by ID (not slug)
     const blogPost = await db.query.posts.findFirst({
-      where: eq(posts.slug, slug),
-      with: {
-        author: true
-      }
+      where: eq(posts.slug, id),
+      with: { author: true }
     });
 
     if (!blogPost) {
@@ -150,7 +174,7 @@ export async function PUT(
       );
     }
 
-    // Check if the current user is the author of the blog
+    // Check authorization
     if (blogPost.authorId !== session.user.id) {
       return NextResponse.json(
         { error: "Forbidden: You can only edit your own blog posts" },
@@ -158,22 +182,46 @@ export async function PUT(
       );
     }
 
-    // Update the blog post with all fields from schema
+    // Handle image upload if base64 data provided
+    let coverImageUrl = body.coverImage;
+
+    if (body.coverImageBase64 && body.coverImageType) {
+      try {
+        coverImageUrl = await uploadImageToCloudinary(
+          body.coverImageBase64,
+          body.coverImageType
+        );
+      } catch (error) {
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : "Failed to upload image" },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Generate new slug if title changed
+    const newSlug = body.title !== blogPost.title
+      ? generateSlug(body.title)
+      : blogPost.slug;
+
+    // Update the blog post
     const updatedBlog = await db
       .update(posts)
       .set({
         title: body.title,
-        content: body.content,
-        excerpt: body.excerpt,
-        coverImage: body.coverImage,
-        status: body.status,
+        slug: newSlug,
+        content: body.content || "",
+        excerpt: body.excerpt || null,
+        coverImage: coverImageUrl || null,
+        status: body.status || "published",
         updatedAt: new Date()
       })
-      .where(eq(posts.slug, slug))
+      .where(eq(posts.slug, id))
       .returning();
 
     return NextResponse.json(
       {
+        success: true,
         message: "Blog post updated successfully",
         post: updatedBlog[0]
       },
@@ -183,7 +231,9 @@ export async function PUT(
     console.error("Error updating blog post:", error);
 
     return NextResponse.json(
-      { error: "Failed to update blog post" },
+      {
+        error: error instanceof Error ? error.message : "Failed to update blog post"
+      },
       { status: 500 }
     );
   }

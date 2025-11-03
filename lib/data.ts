@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Blog } from "./types";
+import { Blog, BlogPayload } from "./types";
 import { User } from "next-auth";
 
 const apiClient = axios.create({
@@ -9,45 +9,54 @@ const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
+// Response interceptor for consistent error handling
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API Error:", error.response?.data || error.message);
-    return Promise.reject(error);
+    const errorMessage = error.response?.data?.error || error.message || "An error occurred";
+    console.error("API Error:", errorMessage);
+
+    // Create a custom error with the server's error message
+    const customError = new Error(errorMessage);
+    return Promise.reject(customError);
   }
 );
+
+
+interface BlogResponse {
+  success: true;
+  post: Blog;
+}
+
+interface BlogsResponse {
+  success: true;
+  posts: Blog[];
+}
+
+interface UpdateBlogResponse {
+  success: true;
+  message: string;
+  post: Blog;
+}
 
 export const blogApi = {
   getAllBlogs: async (): Promise<{ posts: Blog[] }> => {
     try {
-      const response = await apiClient.get("/blogs");
-      return response.data;
+      const response = await apiClient.get<BlogsResponse>("/blogs");
+      return { posts: response.data.posts };
     } catch (error) {
       console.error("Error fetching blogs:", error);
       throw error;
     }
   },
 
-  // Get blog by ID
-  getBlogById: async (slug: string): Promise<{ post: Blog }> => {
+  // Get blog by ID (not slug)
+  getBlogById: async (id: string): Promise<{ post: Blog }> => {
     try {
-      const response = await apiClient.get(`/blogs/${slug}`);
-      return response.data;
+      const response = await apiClient.get<BlogResponse>(`/blogs/${id}`);
+      return { post: response.data.post };
     } catch (error) {
-      console.error(`Error fetching blog with slug ${slug}:`, error);
+      console.error(`Error fetching blog with id ${id}:`, error);
       throw error;
     }
   },
@@ -55,8 +64,8 @@ export const blogApi = {
   // Get blogs by author
   getBlogsByAuthor: async (userId: string): Promise<{ posts: Blog[] }> => {
     try {
-      const response = await apiClient.get(`/blogs/user/${userId}`);
-      return response.data;
+      const response = await apiClient.get<BlogsResponse>(`/blogs/user/${userId}`);
+      return { posts: response.data.posts };
     } catch (error) {
       console.error(`Error fetching blogs for user ${userId}:`, error);
       throw error;
@@ -64,9 +73,9 @@ export const blogApi = {
   },
 
   // Create a new blog
-  createBlog: async (blogData: Partial<Blog>): Promise<Blog> => {
+  createBlog: async (blogData: BlogPayload): Promise<{ success: boolean; post: Blog }> => {
     try {
-      const response = await apiClient.post("/blogs", blogData);
+      const response = await apiClient.post<{ success: true; post: Blog }>("/blogs", blogData);
       return response.data;
     } catch (error) {
       console.error("Error creating blog:", error);
@@ -74,23 +83,24 @@ export const blogApi = {
     }
   },
 
-  // Update an existing blog
-  updateBlog: async (slug: string, blogData: Partial<Blog>): Promise<Blog> => {
+  // Update an existing blog by ID (not slug)
+  updateBlog: async (id: string, blogData: BlogPayload): Promise<{ success: boolean; post: Blog; message: string }> => {
     try {
-      const response = await apiClient.put(`/blogs/${slug}`, blogData);
+      const response = await apiClient.put<UpdateBlogResponse>(`/blogs/${id}`, blogData);
       return response.data;
     } catch (error) {
-      console.error(`Error updating blog with slug ${slug}:`, error);
+      console.error(`Error updating blog with id ${id}:`, error);
       throw error;
     }
   },
 
-  // Delete a blog
-  deleteBlog: async (slug: string): Promise<void> => {
+  // Delete a blog by ID (not slug)
+  deleteBlog: async (id: string): Promise<{ success: boolean; message: string }> => {
     try {
-      await apiClient.delete(`/blogs/${slug}`);
+      const response = await apiClient.delete<{ success: true; message: string }>(`/blogs/${id}`);
+      return response.data;
     } catch (error) {
-      console.error(`Error deleting blog with slug ${slug}:`, error);
+      console.error(`Error deleting blog with id ${id}:`, error);
       throw error;
     }
   },
