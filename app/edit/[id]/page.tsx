@@ -6,19 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
-import { Upload, Eye, EyeOff } from "lucide-react";
+import { Upload, Eye, EyeOff, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Suspense } from "react";
 import { blogApi } from "@/lib/data";
 import { extractTags } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
+import toast from "react-hot-toast";
 
 // Component for the blog editing form
 function EditBlogContent({ blogId }: { blogId: string }) {
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [tags, setTags] = useState("");
   const [preview, setPreview] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -33,6 +37,7 @@ function EditBlogContent({ blogId }: { blogId: string }) {
         setTitle(blog.title);
         setExcerpt(blog.excerpt || "");
         setContent(blog.content);
+        setCoverImage(blog.coverImage);
         setTags(extractTags(blog.content).join(", "));
       } catch (err) {
         console.error("Error fetching blog:", err);
@@ -47,6 +52,39 @@ function EditBlogContent({ blogId }: { blogId: string }) {
     }
   }, [blogId]);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload a valid image (JPEG, PNG, WebP, or GIF)");
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    // Create local preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCoverImage(reader.result as string);
+      setCoverImageFile(file);
+    };
+    reader.readAsDataURL(file);
+    toast.success("Image selected! It will upload when you save.");
+  };
+
+  const removeCoverImage = () => {
+    setCoverImage(null);
+    setCoverImageFile(null);
+    toast.success("Cover image removed");
+  };
+
   const handleUpdate = async () => {
     if (!title.trim()) {
       alert("Please enter a title");
@@ -55,12 +93,49 @@ function EditBlogContent({ blogId }: { blogId: string }) {
 
     try {
       setLoading(true);
-      // Update blog using centralized API service
-      await blogApi.updateBlog(blogId, {
-        title,
-        excerpt: excerpt || undefined,
-        content,
-      });
+      // Prepare payload
+      type BlogPayload = {
+        title: string;
+        excerpt?: string;
+        content: string;
+        coverImage?: string | null;
+        status?: "draft" | "published";
+        coverImageBase64?: string;
+        coverImageType?: string;
+      };
+
+      const updateBlogWithImage = async (imageBase64?: string) => {
+        const payload: BlogPayload = {
+          title,
+          excerpt: excerpt || undefined,
+          content,
+          coverImage: coverImage || null,
+        };
+
+        if (imageBase64 && coverImageFile) {
+          payload.coverImageBase64 = imageBase64;
+          payload.coverImageType = coverImageFile.type;
+        }
+
+        // Update blog using centralized API service
+        await blogApi.updateBlog(blogId, payload);
+        alert("Blog updated successfully!");
+        window.location.href = `/blog/${blogId}`;
+      };
+
+      // Add base64 image if exists
+      if (coverImage && coverImageFile) {
+        // Convert image to base64 if it's a file
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Data = reader.result as string;
+          updateBlogWithImage(base64Data);
+        };
+        reader.readAsDataURL(coverImageFile);
+      } else {
+        // Update blog using centralized API service without image
+        await updateBlogWithImage();
+      }
 
       alert("Blog updated successfully!");
       window.location.href = `/blog/${blogId}`;
@@ -80,12 +155,49 @@ function EditBlogContent({ blogId }: { blogId: string }) {
 
     try {
       setLoading(true);
-      // Update blog as draft using centralized API service
-      await blogApi.updateBlog(blogId, {
-        title,
-        excerpt: excerpt || undefined,
-        content,
-      });
+      // Prepare payload
+      type BlogPayload = {
+        title: string;
+        excerpt?: string;
+        content: string;
+        coverImage?: string | null;
+        status?: "draft" | "published";
+        coverImageBase64?: string;
+        coverImageType?: string;
+      };
+
+      const updateBlogWithImage = async (imageBase64?: string) => {
+        const payload: BlogPayload = {
+          title,
+          excerpt: excerpt || undefined,
+          content,
+          coverImage: coverImage || null,
+          status: "draft",
+        };
+
+        if (imageBase64 && coverImageFile) {
+          payload.coverImageBase64 = imageBase64;
+          payload.coverImageType = coverImageFile.type;
+        }
+
+        // Update blog using centralized API service
+        await blogApi.updateBlog(blogId, payload);
+        alert("Draft saved successfully!");
+      };
+
+      // Add base64 image if exists
+      if (coverImage && coverImageFile) {
+        // Convert image to base64 if it's a file
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Data = reader.result as string;
+          updateBlogWithImage(base64Data);
+        };
+        reader.readAsDataURL(coverImageFile);
+      } else {
+        // Update blog using centralized API service without image
+        await updateBlogWithImage();
+      }
 
       alert("Draft saved successfully!");
     } catch (err) {
@@ -149,11 +261,37 @@ function EditBlogContent({ blogId }: { blogId: string }) {
       {!preview ? (
         <div className="space-y-6">
           {/* Cover Image Upload */}
-          <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition cursor-pointer">
-            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="font-semibold">Update cover image</p>
-            <p className="text-sm text-muted-foreground">or drag and drop</p>
-          </div>
+          {coverImage ? (
+            <div className="relative rounded-lg overflow-hidden border border-border">
+              <Image
+                src={coverImage}
+                alt="Cover"
+                width={1200}
+                height={630}
+                className="w-full h-64 object-cover"
+              />
+              <button
+                onClick={removeCoverImage}
+                className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <label className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition cursor-pointer block">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="font-semibold">Upload cover image</p>
+              <p className="text-sm text-muted-foreground">
+                or drag and drop (Max 5MB)
+              </p>
+            </label>
+          )}
 
           {/* Title */}
           <div>

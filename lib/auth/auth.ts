@@ -92,25 +92,40 @@ export const authOptions: NextAuthOptions = {
         },
 
         async jwt({ token, user }) {
+            // When user first logs in (new session)
             if (user) {
-                token.id = user.id;
-                token.email = user.email;
-                token.name = user.name;
-                token.image = user.image;
+                const dbUser = await db.query.users.findFirst({
+                    where: eq(users.email, user.email!),
+                });
+
+                if (dbUser) {
+                    token.id = dbUser.id; // Use DB UUID
+                    token.name = dbUser.name ?? "Unnamed User";
+                    token.email = dbUser.email;
+                    token.image = dbUser.image ?? DEFAULT_PROFILE_IMAGE;
+                } else {
+                    // Fallback (shouldn’t happen)
+                    token.id = user.id;
+                    token.name = user.name ?? "Unnamed User";
+                    token.email = user.email;
+                    token.image = user.image ?? DEFAULT_PROFILE_IMAGE;
+                }
             }
+
             return token;
         },
 
         async session({ session, token }) {
             if (session.user) {
                 session.user.id = token.id as string;
-                session.user.email = token.email as string;
                 session.user.name = token.name as string;
+                session.user.email = token.email as string;
                 session.user.image = token.image as string;
             }
             return session;
         },
     },
+
 
     pages: {
         signIn: "/login",
