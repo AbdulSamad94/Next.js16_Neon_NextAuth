@@ -113,7 +113,7 @@ export async function DELETE(
     }
 
     // Delete the blog post
-    await db.delete(posts).where(eq(posts.id, id));
+    await db.delete(posts).where(eq(posts.slug, id));
 
     return NextResponse.json(
       { success: true, message: "Blog post deleted successfully" },
