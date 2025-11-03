@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import { Blog } from "@/lib/types";
 import { blogApi } from "@/lib/data";

@@ -104,4 +104,46 @@ export type CreateBlogInput = {
 export interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
+  disabled?: boolean;
+}
+
+export type BlogPayload = {
+  title: string;
+  excerpt?: string;
+  content: string;
+  coverImage?: string | null;
+  status?: "draft" | "published";
+  coverImageBase64?: string;
+  coverImageType?: string;
+};
+
+// Common form state types
+export interface WithSavingState {
+  saving: boolean;
+}
+
+export interface WithErrorState {
+  error: string | null;
+  setError: (error: string | null) => void;
+}
+
+export interface WithPreviewState {
+  preview: boolean;
+  setPreview: (preview: boolean) => void;
+}
+
+export interface EditBlogFormState {
+  title: string;
+  setTitle: (title: string) => void;
+  excerpt: string;
+  setExcerpt: (excerpt: string) => void;
+  content: string;
+  setContent: (content: string) => void;
+  coverImage: string | null;
+  setCoverImage: (coverImage: string | null) => void;
+  tags: string;
+  setTags: (tags: string) => void;
+  preview: boolean;
+  setPreview: (preview: boolean) => void;
+  saving: boolean;
 }
