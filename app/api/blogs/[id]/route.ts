@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
-import { posts } from "@/lib/db/schema/schema";
+import { comments, postCategories, postLikes, posts } from "@/lib/db/schema/schema";
 import { eq } from "drizzle-orm";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 
@@ -40,6 +40,34 @@ export async function GET(
             image: true,
           },
         },
+        postCategories: {
+          with: {
+            category: true,
+          },
+        },
+        comments: {
+          with: {
+            author: {
+              columns: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+            replies: {
+              with: {
+                author: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    image: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        likes: true,
       },
     });
 
@@ -111,6 +139,11 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    // Delete related data
+    await db.delete(postCategories).where(eq(postCategories.postId, blogPost.id));
+    await db.delete(comments).where(eq(comments.postId, blogPost.id));
+    await db.delete(postLikes).where(eq(postLikes.postId, blogPost.id));
 
     // Delete the blog post
     await db.delete(posts).where(eq(posts.slug, id));
@@ -204,8 +237,23 @@ export async function PUT(
       ? generateSlug(body.title)
       : blogPost.slug;
 
+    // Update categories
+    if (body.categoryIds && Array.isArray(body.categoryIds)) {
+      // Delete existing categories for the post
+      await db.delete(postCategories).where(eq(postCategories.postId, blogPost.id));
+
+      // Insert new categories
+      if (body.categoryIds.length > 0) {
+        const categoryValues = body.categoryIds.map((categoryId: string) => ({
+          postId: blogPost.id,
+          categoryId,
+        }));
+        await db.insert(postCategories).values(categoryValues);
+      }
+    }
+
     // Update the blog post
-    const updatedBlog = await db
+    const [updatedBlog] = await db
       .update(posts)
       .set({
         title: body.title,
@@ -219,11 +267,30 @@ export async function PUT(
       .where(eq(posts.slug, id))
       .returning();
 
+    const completePost = await db.query.posts.findFirst({
+      where: eq(posts.id, updatedBlog.id),
+      with: {
+        author: {
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        postCategories: {
+          with: {
+            category: true,
+          },
+        },
+      },
+    });
+
     return NextResponse.json(
       {
         success: true,
         message: "Blog post updated successfully",
-        post: updatedBlog[0]
+        post: completePost
       },
       { status: 200 }
     );

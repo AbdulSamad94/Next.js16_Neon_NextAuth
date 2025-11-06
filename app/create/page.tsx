@@ -8,14 +8,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader } from "@/components/shared/loader";
 import { motion } from "framer-motion";
 import { Upload, Eye, EyeOff, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import toast, { Toaster } from "react-hot-toast";
 import Image from "next/image";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { blogApi } from "@/lib/data";
+import { blogApi, categoryApi } from "@/lib/data";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { BlogPayload } from "@/lib/types";
 
 export default function CreateBlog() {
   const [title, setTitle] = useState("");
@@ -23,42 +32,72 @@ export default function CreateBlog() {
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
   const [preview, setPreview] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const router = useRouter();
   const { data: session } = useSession();
+
+  // Fetch categories on mount
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await categoryApi.getAllCategories();
+        setCategories(response.categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast.error("Failed to load categories");
+      } finally {
+        setLoadingCategories(false);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!validTypes.includes(file.type)) {
       toast.error("Please upload a valid image (JPEG, PNG, WebP, or GIF)");
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image size should be less than 5MB");
       return;
     }
 
-    // Create local preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setCoverImage(reader.result as string);
       setCoverImageFile(file);
     };
+    reader.onerror = () => {
+      toast.error("Failed to read image file");
+    };
     reader.readAsDataURL(file);
     toast.success("Image selected! It will upload when you publish.");
   };
 
+  const handleAddCategory = (categoryId: string) => {
+    if (!selectedCategories.includes(categoryId)) {
+      setSelectedCategories([...selectedCategories, categoryId]);
+    }
+  };
+
+  const handleRemoveCategory = (categoryId: string) => {
+    setSelectedCategories(selectedCategories.filter((id) => id !== categoryId));
+  };
+
   const handleSubmit = async (status: "draft" | "published") => {
-    // Validation
     if (!title.trim()) {
       toast.error("Please enter a title");
       return;
@@ -86,47 +125,63 @@ export default function CreateBlog() {
         setPublishing(true);
       }
 
-      // Prepare payload
-      type BlogPayload = {
-        title: string;
-        excerpt?: string;
-        content: string;
-        status: "draft" | "published";
-        coverImageBase64?: string;
-        coverImageType?: string;
+      const createBlog = async (imageBase64?: string) => {
+        const payload: BlogPayload = {
+          title,
+          excerpt: excerpt.trim() || undefined,
+          content,
+          status,
+          categoryIds: selectedCategories,
+        };
+
+        if (imageBase64 && coverImageFile) {
+          payload.coverImageBase64 = imageBase64;
+          payload.coverImageType = coverImageFile.type;
+        }
+
+        const response = await blogApi.createBlog(payload);
+        toast.success(
+          status === "draft"
+            ? "Draft saved successfully!"
+            : "Blog published successfully!"
+        );
+
+        setTimeout(() => {
+          router.push(`/blog/${response.post.slug}`);
+        }, 1000);
       };
 
-      const payload: BlogPayload = {
-        title,
-        excerpt: excerpt.trim() || undefined,
-        content,
-        status,
-      };
-
-      // Add base64 image if exists
-      if (coverImage && coverImageFile) {
-        payload.coverImageBase64 = coverImage;
-        payload.coverImageType = coverImageFile.type;
+      if (coverImageFile) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const base64Data = reader.result as string;
+            await createBlog(base64Data);
+          } catch (error) {
+            console.error("Error in FileReader callback:", error);
+            toast.error(
+              error instanceof Error ? error.message : "Failed to create blog"
+            );
+            setSavingDraft(false);
+            setPublishing(false);
+          }
+        };
+        reader.onerror = () => {
+          toast.error("Failed to read image file");
+          setSavingDraft(false);
+          setPublishing(false);
+        };
+        reader.readAsDataURL(coverImageFile);
+      } else {
+        await createBlog();
+        setSavingDraft(false);
+        setPublishing(false);
       }
-
-      // Create blog using centralized API service
-      await blogApi.createBlog(payload);
-
-      toast.success(
-        status === "draft"
-          ? "Draft saved successfully!"
-          : "Blog published successfully!"
-      );
-
-      setTimeout(() => {
-        router.push(`/`);
-      }, 1000);
     } catch (error) {
       console.error("Submit error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to create blog"
       );
-    } finally {
       setSavingDraft(false);
       setPublishing(false);
     }
@@ -137,6 +192,10 @@ export default function CreateBlog() {
     setCoverImageFile(null);
     toast.success("Cover image removed");
   };
+
+  const selectedCategoryNames = categories
+    .filter((cat) => selectedCategories.includes(cat.id))
+    .map((cat) => cat.name);
 
   return (
     <ProtectedRoute>
@@ -151,7 +210,6 @@ export default function CreateBlog() {
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            {/* Header */}
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold">Create New Blog</h1>
@@ -182,7 +240,6 @@ export default function CreateBlog() {
 
             {!preview ? (
               <div className="space-y-6">
-                {/* Cover Image Upload */}
                 {coverImage ? (
                   <div className="relative rounded-lg overflow-hidden border border-border">
                     <Image
@@ -215,7 +272,6 @@ export default function CreateBlog() {
                   </label>
                 )}
 
-                {/* Title */}
                 <div>
                   <label className="text-sm font-semibold mb-2 block">
                     Title <span className="text-red-500">*</span>
@@ -232,7 +288,6 @@ export default function CreateBlog() {
                   </p>
                 </div>
 
-                {/* Excerpt */}
                 <div>
                   <label className="text-sm font-semibold mb-2 block">
                     Excerpt (Optional)
@@ -249,7 +304,64 @@ export default function CreateBlog() {
                   </p>
                 </div>
 
-                {/* Rich Text Editor */}
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">
+                    Categories (Optional)
+                  </label>
+                  {loadingCategories ? (
+                    <div className="text-sm text-muted-foreground">
+                      Loading categories...
+                    </div>
+                  ) : (
+                    <>
+                      <Select onValueChange={handleAddCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem
+                              key={category.id}
+                              value={category.id}
+                              disabled={selectedCategories.includes(
+                                category.id
+                              )}
+                            >
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {selectedCategories.map((categoryId) => {
+                            const category = categories.find(
+                              (c) => c.id === categoryId
+                            );
+                            return (
+                              <Badge
+                                key={categoryId}
+                                variant="secondary"
+                                className="gap-1"
+                              >
+                                {category?.name}
+                                <button
+                                  onClick={() =>
+                                    handleRemoveCategory(categoryId)
+                                  }
+                                  className="ml-1 hover:text-destructive"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
                 <div>
                   <label className="text-sm font-semibold mb-2 block">
                     Content <span className="text-red-500">*</span>
@@ -260,7 +372,6 @@ export default function CreateBlog() {
                   </p>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-3 justify-end pt-6 border-t border-border">
                   <Button
                     variant="outline"
@@ -313,6 +424,15 @@ export default function CreateBlog() {
                   </div>
                   {excerpt && (
                     <p className="text-muted-foreground text-lg">{excerpt}</p>
+                  )}
+                  {selectedCategoryNames.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCategoryNames.map((name) => (
+                        <Badge key={name} variant="outline">
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
                   )}
                   <div className="flex items-center gap-3 pt-4 border-t border-border">
                     {session?.user?.image && (
