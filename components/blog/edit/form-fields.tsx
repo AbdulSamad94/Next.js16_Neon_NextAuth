@@ -1,17 +1,20 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { Category } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FormFieldsProps {
   title: string;
   setTitle: (title: string) => void;
   excerpt: string;
   setExcerpt: (excerpt: string) => void;
-  tags: string;
-  setTags: (tags: string) => void;
   content: string;
   setContent: (content: string) => void;
   saving: boolean;
+  allCategories: Category[];
+  selectedCategories: string[];
+  setSelectedCategories: (categories: string[]) => void;
 }
 
 export function FormFields({
@@ -19,12 +22,20 @@ export function FormFields({
   setTitle,
   excerpt,
   setExcerpt,
-  tags,
-  setTags,
   content,
   setContent,
   saving,
+  allCategories,
+  selectedCategories,
+  setSelectedCategories,
 }: FormFieldsProps) {
+  const handleCategoryChange = (categoryId: string) => {
+    const newSelectedCategories = selectedCategories.includes(categoryId)
+      ? selectedCategories.filter((id) => id !== categoryId)
+      : [...selectedCategories, categoryId];
+    setSelectedCategories(newSelectedCategories);
+  };
+
   return (
     <>
       {/* Title */}
@@ -63,15 +74,27 @@ export function FormFields({
         </p>
       </div>
 
-      {/* Tags */}
+      {/* Categories */}
       <div>
-        <label className="text-sm font-semibold mb-2 block">Tags</label>
-        <Input
-          placeholder="Add tags separated by commas"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          disabled={saving}
-        />
+        <label className="text-sm font-semibold mb-2 block">Categories</label>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {allCategories.map((category) => (
+            <div key={category.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={category.id}
+                checked={selectedCategories.includes(category.id)}
+                onCheckedChange={() => handleCategoryChange(category.id)}
+                disabled={saving}
+              />
+              <label
+                htmlFor={category.id}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {category.name}
+              </label>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Content Editor */}

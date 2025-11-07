@@ -4,7 +4,6 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { blogApi } from "@/lib/data";
-import { extractTags } from "@/lib/utils";
 import { EditBlogForm } from "@/components/blog/edit/edit-blog-form";
 import { EditBlogFormSkeleton } from "@/components/blog/edit/edit-blog-form-skeleton";
 import { ErrorDisplay } from "@/components/blog/edit/error-display";
@@ -13,6 +12,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
+
+import { categoryApi } from "@/lib/data";
+import { Category } from "@/lib/types";
 
 export default function EditBlog({
   params,
@@ -25,12 +27,13 @@ export default function EditBlog({
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const [tags, setTags] = useState("");
   const [preview, setPreview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [blog, setBlog] = useState<Blog | null>(null);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -45,7 +48,7 @@ export default function EditBlog({
   useEffect(() => {
     if (!id || !session) return;
 
-    async function fetchBlog() {
+    async function fetchBlogAndCategories() {
       try {
         setLoading(true);
         // Fetch blog by ID using centralized API service
@@ -63,7 +66,12 @@ export default function EditBlog({
         setExcerpt(fetchedBlog.excerpt || "");
         setContent(fetchedBlog.content);
         setCoverImage(fetchedBlog.coverImage);
-        setTags(extractTags(fetchedBlog.content).join(", "));
+        setSelectedCategories(
+          fetchedBlog.postCategories?.map((pc) => pc.category.id) || []
+        );
+
+        const categoriesResponse = await categoryApi.getAllCategories();
+        setAllCategories(categoriesResponse.categories);
       } catch (err) {
         console.error("Error fetching blog:", err);
         setError(err instanceof Error ? err.message : "Failed to load blog");
@@ -72,7 +80,7 @@ export default function EditBlog({
       }
     }
 
-    fetchBlog();
+    fetchBlogAndCategories();
   }, [id, session]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,6 +151,7 @@ export default function EditBlog({
           content,
           coverImage: coverImage || null,
           status: "published", // Explicitly set to published
+          categoryIds: selectedCategories,
         };
 
         // Only add base64 if we have a NEW file to upload
@@ -202,6 +211,7 @@ export default function EditBlog({
           content,
           coverImage: coverImage || null,
           status: "draft",
+          categoryIds: selectedCategories,
         };
 
         if (imageBase64 && coverImageFile) {
@@ -306,8 +316,6 @@ export default function EditBlog({
             content={content}
             setContent={setContent}
             coverImage={coverImage}
-            tags={tags}
-            setTags={setTags}
             preview={preview}
             setPreview={setPreview}
             handleImageUpload={handleImageUpload}
@@ -315,6 +323,9 @@ export default function EditBlog({
             handleUpdate={handleUpdate}
             handleSaveDraft={handleSaveDraft}
             saving={saving}
+            allCategories={allCategories}
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
           />
         </main>
 

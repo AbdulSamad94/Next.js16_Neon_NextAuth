@@ -109,7 +109,7 @@ export default function Home() {
                   }
                   author={featuredBlog.author.name || "Anonymous"}
                   date={formatDate(featuredBlog.createdAt)}
-                  tags={extractTags(featuredBlog.content)}
+                  tags={featuredBlog.postCategories?.map(pc => pc.category.name) || []}
                   coverImage={
                     featuredBlog.coverImage ||
                     "/placeholder.svg?height=400&width=800"
@@ -141,7 +141,7 @@ export default function Home() {
                         }
                         author={blog.author.name || "Anonymous"}
                         date={formatDate(blog.createdAt)}
-                        tags={extractTags(blog.content)}
+                        tags={blog.postCategories?.map(pc => pc.category.name) || []}
                         coverImage={
                           blog.coverImage ||
                           "/placeholder.svg?height=400&width=600"

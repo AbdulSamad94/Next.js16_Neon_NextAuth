@@ -107,15 +107,6 @@ export interface RichTextEditorProps {
   disabled?: boolean;
 }
 
-export type BlogPayload = {
-  title: string;
-  excerpt?: string;
-  content: string;
-  coverImage?: string | null;
-  status?: "draft" | "published";
-  coverImageBase64?: string;
-  coverImageType?: string;
-};
 
 // Common form state types
 export interface WithSavingState {
@@ -146,4 +137,39 @@ export interface EditBlogFormState {
   preview: boolean;
   setPreview: (preview: boolean) => void;
   saving: boolean;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  createdAt: string;
+}
+
+export type BlogPayload = {
+  title: string;
+  excerpt?: string;
+  content: string;
+  coverImage?: string | null;
+  status?: "draft" | "published";
+  coverImageBase64?: string;
+  coverImageType?: string;
+  categoryIds?: string[]; // Add this
+};
+
+// Update Blog interface to include categories
+export interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  coverImage: string | null;
+  status: string;
+  createdAt: string;
+  author: Author;
+  postCategories?: Array<{ // Add this
+    category: Category;
+  }>;
 }

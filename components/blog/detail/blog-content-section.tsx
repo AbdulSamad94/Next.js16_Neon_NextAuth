@@ -1,10 +1,7 @@
-"use client";
-
 import { motion } from "framer-motion";
 import { Blog } from "@/lib/types";
 import { BlogContent as BlogContentComponent } from "@/components/blog/blog-content";
 import { BlogCoverImage } from "@/components/blog/blog-cover-image";
-import { extractTags } from "@/lib/utils";
 import { BlogHeader } from "./blog-header";
 import { Session } from "next-auth";
 
@@ -29,12 +26,12 @@ export function BlogContentSection({
       {/* Title and Meta */}
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          {extractTags(blog.content).map((tag) => (
+          {blog.postCategories?.map(({ category }) => (
             <span
-              key={tag}
+              key={category.id}
               className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-medium"
             >
-              {tag}
+              {category.name}
             </span>
           ))}
         </div>

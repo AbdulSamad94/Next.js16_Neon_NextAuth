@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Blog, BlogPayload } from "./types";
+import { Blog, BlogPayload, Category } from "./types";
 import { User } from "next-auth";
 
 const apiClient = axios.create({
@@ -16,12 +16,10 @@ apiClient.interceptors.response.use(
     const errorMessage = error.response?.data?.error || error.message || "An error occurred";
     console.error("API Error:", errorMessage);
 
-    // Create a custom error with the server's error message
     const customError = new Error(errorMessage);
     return Promise.reject(customError);
   }
 );
-
 
 interface BlogResponse {
   success: true;
@@ -39,6 +37,16 @@ interface UpdateBlogResponse {
   post: Blog;
 }
 
+interface CategoriesResponse {
+  success: true;
+  categories: Category[];
+}
+
+interface CategoryResponse {
+  success: true;
+  category: Category;
+}
+
 export const blogApi = {
   getAllBlogs: async (): Promise<{ posts: Blog[] }> => {
     try {
@@ -50,7 +58,6 @@ export const blogApi = {
     }
   },
 
-  // Get blog by ID (not slug)
   getBlogById: async (id: string): Promise<{ post: Blog }> => {
     try {
       const response = await apiClient.get<BlogResponse>(`/blogs/${id}`);
@@ -61,10 +68,9 @@ export const blogApi = {
     }
   },
 
-  // Get blogs by author
   getBlogsByAuthor: async (userId: string): Promise<{ posts: Blog[] }> => {
     try {
-      const response = await apiClient.get<BlogsResponse>(`/blogs/user/${userId}`);
+      const response = await apiClient.get<BlogsResponse>(`/blogs?authorId=${userId}`);
       return { posts: response.data.posts };
     } catch (error) {
       console.error(`Error fetching blogs for user ${userId}:`, error);
@@ -72,7 +78,16 @@ export const blogApi = {
     }
   },
 
-  // Create a new blog
+  getBlogsByCategory: async (categorySlug: string): Promise<{ posts: Blog[] }> => {
+    try {
+      const response = await apiClient.get<BlogsResponse>(`/blogs?category=${categorySlug}`);
+      return { posts: response.data.posts };
+    } catch (error) {
+      console.error(`Error fetching blogs for category ${categorySlug}:`, error);
+      throw error;
+    }
+  },
+
   createBlog: async (blogData: BlogPayload): Promise<{ success: boolean; post: Blog }> => {
     try {
       const response = await apiClient.post<{ success: true; post: Blog }>("/blogs", blogData);
@@ -83,7 +98,6 @@ export const blogApi = {
     }
   },
 
-  // Update an existing blog by ID (not slug)
   updateBlog: async (id: string, blogData: BlogPayload): Promise<{ success: boolean; post: Blog; message: string }> => {
     try {
       const response = await apiClient.put<UpdateBlogResponse>(`/blogs/${id}`, blogData);
@@ -94,13 +108,45 @@ export const blogApi = {
     }
   },
 
-  // Delete a blog by ID (not slug)
   deleteBlog: async (id: string): Promise<{ success: boolean; message: string }> => {
     try {
       const response = await apiClient.delete<{ success: true; message: string }>(`/blogs/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting blog with id ${id}:`, error);
+      throw error;
+    }
+  },
+};
+
+// Category API
+export const categoryApi = {
+  getAllCategories: async (): Promise<{ categories: Category[] }> => {
+    try {
+      const response = await apiClient.get<CategoriesResponse>("/categories");
+      return { categories: response.data.categories };
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      throw error;
+    }
+  },
+
+  getCategoryById: async (id: string): Promise<{ category: Category }> => {
+    try {
+      const response = await apiClient.get<CategoryResponse>(`/categories/${id}`);
+      return { category: response.data.category };
+    } catch (error) {
+      console.error(`Error fetching category with id ${id}:`, error);
+      throw error;
+    }
+  },
+
+  createCategory: async (categoryData: { name: string; description?: string }): Promise<{ success: boolean; category: Category }> => {
+    try {
+      const response = await apiClient.post<{ success: true; category: Category }>("/categories", categoryData);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating category:", error);
       throw error;
     }
   },
@@ -164,32 +210,6 @@ export const userApi = {
       return response.data;
     } catch (error) {
       console.error(`Error updating user with id ${id}:`, error);
-      throw error;
-    }
-  },
-};
-
-// Comment-related API functions
-export const commentApi = {
-  getCommentsForBlog: async (blogId: string): Promise<Comment[]> => {
-    try {
-      const response = await apiClient.get(`/blogs/${blogId}/comments`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching comments for blog ${blogId}:`, error);
-      throw error;
-    }
-  },
-
-  addCommentToBlog: async (blogId: string, commentData: {
-    content: string;
-    authorId: string;
-  }): Promise<Comment> => {
-    try {
-      const response = await apiClient.post(`/blogs/${blogId}/comments`, commentData);
-      return response.data;
-    } catch (error) {
-      console.error(`Error adding comment to blog ${blogId}:`, error);
       throw error;
     }
   },

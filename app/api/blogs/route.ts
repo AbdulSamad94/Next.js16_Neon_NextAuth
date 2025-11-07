@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
-import { posts } from "@/lib/db/schema/schema";
+import { categories, postCategories, posts } from "@/lib/db/schema/schema";
 import { createBlogSchema } from "@/lib/validations/blog";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import slugify from "slugify";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, SQL } from "drizzle-orm";
 
 async function generateUniqueSlug(title: string): Promise<string> {
     const baseSlug = slugify(title, {
@@ -92,9 +92,37 @@ export async function POST(req: Request) {
             })
             .returning();
 
+        if (body.categoryIds && Array.isArray(body.categoryIds) && body.categoryIds.length > 0) {
+            const categoryValues = body.categoryIds.map((categoryId: string) => ({
+                postId: newPost.id,
+                categoryId,
+            }));
+
+            await db.insert(postCategories).values(categoryValues);
+        }
+
+        const completePost = await db.query.posts.findFirst({
+            where: eq(posts.id, newPost.id),
+            with: {
+                author: {
+                    columns: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        image: true,
+                    },
+                },
+                postCategories: {
+                    with: {
+                        category: true,
+                    },
+                },
+            },
+        });
+
         return NextResponse.json({
             success: true,
-            post: newPost,
+            post: completePost,
         });
     } catch (error) {
         console.error("Create blog error:", error);
@@ -118,10 +146,30 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status");
         const authorId = searchParams.get("authorId");
+        const categorySlug = searchParams.get("category");
 
-        console.log("Fetching blogs with status:", status, "and authorId:", authorId);
+        // Build query with filters
+        const whereConditions: SQL[] = [];
 
-        const query = db.query.posts.findMany({
+        if (status) {
+            whereConditions.push(eq(posts.status, status as "draft" | "published"));
+        }
+
+        if (authorId) {
+            whereConditions.push(eq(posts.authorId, authorId));
+        }
+
+        if (categorySlug) {
+            const subquery = db.select({ postId: postCategories.postId })
+                .from(postCategories)
+                .leftJoin(categories, eq(postCategories.categoryId, categories.id))
+                .where(eq(categories.slug, categorySlug));
+
+            whereConditions.push(inArray(posts.id, subquery));
+        }
+
+        const allPosts = await db.query.posts.findMany({
+            where: and(...whereConditions),
             with: {
                 author: {
                     columns: {
@@ -131,11 +179,14 @@ export async function GET(req: Request) {
                         image: true,
                     },
                 },
+                postCategories: {
+                    with: {
+                        category: true,
+                    },
+                },
             },
             orderBy: (posts, { desc }) => [desc(posts.createdAt)],
         });
-
-        const allPosts = await query;
 
         return NextResponse.json({
             success: true,

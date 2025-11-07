@@ -8,6 +8,8 @@ import { ActionButtons } from "@/components/blog/edit/action-buttons";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 
+import { Category } from "@/lib/types";
+
 interface EditBlogFormProps {
   title: string;
   setTitle: (title: string) => void;
@@ -16,8 +18,6 @@ interface EditBlogFormProps {
   content: string;
   setContent: (content: string) => void;
   coverImage: string | null;
-  tags: string;
-  setTags: (tags: string) => void;
   preview: boolean;
   setPreview: (preview: boolean) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -25,6 +25,9 @@ interface EditBlogFormProps {
   handleUpdate: () => void;
   handleSaveDraft: () => void;
   saving: boolean;
+  allCategories: Category[];
+  selectedCategories: string[];
+  setSelectedCategories: (categories: string[]) => void;
 }
 
 export function EditBlogForm({
@@ -35,8 +38,6 @@ export function EditBlogForm({
   content,
   setContent,
   coverImage,
-  tags,
-  setTags,
   preview,
   setPreview,
   handleImageUpload,
@@ -44,6 +45,9 @@ export function EditBlogForm({
   handleUpdate,
   handleSaveDraft,
   saving,
+  allCategories,
+  selectedCategories,
+  setSelectedCategories,
 }: EditBlogFormProps) {
   const { data: session } = useSession();
 
@@ -128,11 +132,12 @@ export function EditBlogForm({
           setTitle={setTitle}
           excerpt={excerpt}
           setExcerpt={setExcerpt}
-          tags={tags}
-          setTags={setTags}
           content={content}
           setContent={setContent}
           saving={saving}
+          allCategories={allCategories}
+          selectedCategories={selectedCategories}
+          setSelectedCategories={setSelectedCategories}
         />
 
         <ActionButtons
