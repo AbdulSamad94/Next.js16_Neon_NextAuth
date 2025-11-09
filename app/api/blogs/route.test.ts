@@ -180,6 +180,7 @@ describe('Blogs API Route', () => {
     });
 
     test('returns 400 if validation fails', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       (getServerSession as jest.Mock).mockResolvedValue({
         user: { email: 'test@example.com' },
       });
@@ -208,6 +209,7 @@ describe('Blogs API Route', () => {
 
       expect(response.status).toBe(400);
       expect(responseJson.error).toBe('Validation failed');
+      consoleErrorSpy.mockRestore();
     });
   });
 

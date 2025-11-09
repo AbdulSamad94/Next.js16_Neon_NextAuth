@@ -30,15 +30,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
           levels: [1, 2, 3],
         },
       }),
-      Underline,
       Placeholder.configure({
         placeholder: "Start writing your amazing content...",
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: "text-primary underline cursor-pointer",
-        },
       }),
     ],
     content,
