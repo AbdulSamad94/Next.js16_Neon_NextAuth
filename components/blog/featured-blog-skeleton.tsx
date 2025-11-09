@@ -7,6 +7,7 @@ export function FeaturedBlogSkeleton() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      data-testid="featured-skeleton"
     >
       <article className="group cursor-pointer grid md:grid-cols-2 gap-8 items-center mb-16">
         <div className="aspect-video rounded-xl overflow-hidden relative">
