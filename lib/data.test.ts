@@ -17,7 +17,7 @@ jest.mock('axios', () => {
   };
 });
 
-import { blogApi, authApi, userApi, categoryApi } from './data';
+import { blogApi, authApi, userApi } from './data';
 
 describe('API Service', () => {
   beforeEach(() => {

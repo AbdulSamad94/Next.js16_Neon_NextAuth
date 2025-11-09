@@ -2,6 +2,7 @@ import { POST } from './route';
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { User } from 'next-auth';
 
 // Mock the database
 jest.mock('@/lib/db', () => ({
@@ -49,7 +50,7 @@ describe('Signup API Route', () => {
   });
 
   test('returns 400 if user already exists', async () => {
-    (db.query.users.findFirst as jest.Mock).mockResolvedValue({ id: '1' } as any);
+    (db.query.users.findFirst as jest.Mock).mockResolvedValue({ id: '1' } as User);
 
     const request = {
       json: jest.fn().mockResolvedValue({
@@ -83,6 +84,7 @@ describe('Signup API Route', () => {
   });
 
   test('handles server error during user creation', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     (db.query.users.findFirst as jest.Mock).mockResolvedValue(null);
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_password');
     (db.insert as jest.Mock).mockImplementation(() => {
@@ -102,5 +104,6 @@ describe('Signup API Route', () => {
 
     expect(response.status).toBe(500);
     expect(responseJson.error).toBe('Internal Server Error');
+    consoleErrorSpy.mockRestore();
   });
 });
