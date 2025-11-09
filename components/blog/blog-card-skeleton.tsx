@@ -8,6 +8,7 @@ export function BlogCardSkeleton() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       whileHover={{ y: -4 }}
+      data-testid="blog-skeleton"
     >
       <div className="group cursor-pointer h-full flex flex-col">
         <div className="overflow-hidden rounded-lg bg-secondary mb-4 aspect-video relative shrink-0">
