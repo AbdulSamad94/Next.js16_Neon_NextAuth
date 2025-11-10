@@ -77,7 +77,7 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
     <div className="flex items-center justify-between border-b border-border pb-6">
       <div className="flex items-center gap-4">
         <Avatar>
-          <AvatarImage src={blog.author.image || "/placeholder.svg"} />
+          <AvatarImage src={blog.author.image || "/default-profile.jpeg"} />
           <AvatarFallback>
             {blog.author.name?.[0] || blog.author.email[0]}
           </AvatarFallback>
