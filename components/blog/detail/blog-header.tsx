@@ -57,7 +57,6 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      // Use blogId instead of blog.slug since API now uses ID
       await blogApi.deleteBlog(blogId);
 
       toast.success("Blog deleted successfully!");
@@ -76,14 +75,21 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
   return (
     <div className="flex items-center justify-between border-b border-border pb-6">
       <div className="flex items-center gap-4">
-        <Avatar>
-          <AvatarImage src={blog.author.image || "/default-profile.jpeg"} />
-          <AvatarFallback>
-            {blog.author.name?.[0] || blog.author.email[0]}
-          </AvatarFallback>
-        </Avatar>
+        <Link href={`/profile/${blog.author.id}`}>
+          <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+            <AvatarImage src={blog.author.image || "/default-profile.jpeg"} />
+            <AvatarFallback>
+              {blog.author.name?.[0] || blog.author.email[0]}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
         <div>
-          <p className="font-semibold">{blog.author.name || "Anonymous"}</p>
+          <Link
+            href={`/profile/${blog.author.id}`}
+            className="font-semibold hover:text-primary transition-colors"
+          >
+            {blog.author.name || "Anonymous"}
+          </Link>
           <p className="text-sm text-muted-foreground">
             {formatDate(blog.createdAt)} • {calculateReadTime(blog.content)} min
             read
