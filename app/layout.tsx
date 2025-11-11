@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description:
     "A modern platform for sharing your thoughts and ideas with the world",
   generator: "v0.app",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

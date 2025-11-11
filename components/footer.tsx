@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Footer() {
   return (
     <footer className="border-t border-border bg-secondary/30 mt-20">
@@ -14,19 +16,19 @@ export function Footer() {
             <h4 className="font-semibold text-sm mb-4">Product</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Features
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Pricing
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Security
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -34,19 +36,19 @@ export function Footer() {
             <h4 className="font-semibold text-sm mb-4">Company</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   About
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Blog
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -54,19 +56,19 @@ export function Footer() {
             <h4 className="font-semibold text-sm mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Privacy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Terms
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link href="#" className="hover:text-foreground transition">
                   Cookies
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -74,15 +76,24 @@ export function Footer() {
         <div className="border-t border-border pt-8 flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>&copy; 2025 BlogHub. All rights reserved.</p>
           <div className="flex gap-6 mt-4 sm:mt-0">
-            <a href="#" className="hover:text-foreground transition">
+            <Link
+              href="https://x.com/abdulsamad77870"
+              className="hover:text-foreground transition"
+            >
               Twitter
-            </a>
-            <a href="#" className="hover:text-foreground transition">
+            </Link>
+            <Link
+              href="https://github.com/AbdulSamad94"
+              className="hover:text-foreground transition"
+            >
               GitHub
-            </a>
-            <a href="#" className="hover:text-foreground transition">
+            </Link>
+            <Link
+              href="https://www.linkedin.com/in/abdul-samad-siddiqui-0183012b5/"
+              className="hover:text-foreground transition"
+            >
               LinkedIn
-            </a>
+            </Link>
           </div>
         </div>
       </div>

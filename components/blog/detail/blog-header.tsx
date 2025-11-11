@@ -73,8 +73,9 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
   const isAuthor = currentSession?.user?.id === blog.author.id;
 
   return (
-    <div className="flex items-center justify-between border-b border-border pb-6">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center justify-between border-b border-border pb-6 gap-4">
+      {/* Author Info */}
+      <div className="flex items-center gap-3 min-w-0">
         <Link href={`/profile/${blog.author.id}`}>
           <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
             <AvatarImage src={blog.author.image || "/default-profile.jpeg"} />
@@ -83,41 +84,44 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
             </AvatarFallback>
           </Avatar>
         </Link>
-        <div>
+        <div className="min-w-0">
           <Link
             href={`/profile/${blog.author.id}`}
-            className="font-semibold hover:text-primary transition-colors"
+            className="font-semibold hover:text-primary transition-colors block truncate"
           >
             {blog.author.name || "Anonymous"}
           </Link>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground whitespace-nowrap">
             {formatDate(blog.createdAt)} • {calculateReadTime(blog.content)} min
             read
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        {/* Edit/Delete buttons for the author */}
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-2">
         {isAuthor && (
-          <div className="flex items-center gap-2">
+          <>
             <Link href={`/edit/${blogId}`}>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="shrink-0">
                 <Edit className="w-4 h-4 mr-1" />
                 Edit
               </Button>
             </Link>
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
                   disabled={isDeleting}
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
                   {isDeleting ? "Deleting..." : "Delete"}
                 </Button>
               </AlertDialogTrigger>
+
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -137,17 +141,24 @@ export function BlogHeader({ blog, session, blogId }: BlogHeaderProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
+          </>
         )}
+
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setLiked(!liked)}
-          className={liked ? "text-red-500" : ""}
+          className={liked ? "text-red-500 shrink-0" : "shrink-0"}
         >
           <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
         </Button>
-        <Button variant="ghost" size="sm" onClick={handleShare}>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleShare}
+          className="shrink-0"
+        >
           <Share2 className="w-5 h-5" />
         </Button>
       </div>

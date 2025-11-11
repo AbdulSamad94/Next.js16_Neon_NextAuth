@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/auth";
+import { getAuthSession } from "@/lib/auth/authOptions";
 import { db } from "@/lib/db";
 import { users, posts, follows } from "@/lib/db/schema/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -13,7 +12,7 @@ export async function GET(
 ) {
     try {
         const userId = (await params).id;
-        const session = await getServerSession(authOptions);
+        const session = await getAuthSession();
         const currentUserId = session?.user?.id;
 
         // Fetch user with basic info
@@ -97,7 +96,7 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getAuthSession();
         const userId = (await params).id;
 
         if (!session?.user?.id) {

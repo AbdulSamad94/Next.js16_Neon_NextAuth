@@ -1,6 +1,6 @@
 "use client";
 
-import { User, LogOut, Settings, UserCircle } from "lucide-react";
+import { User, LogOut, UserCircle } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +58,7 @@ export function UserProfileDropdown() {
         <div className="py-1">
           <DropdownMenuItem asChild>
             <Link
-              href="/settings"
+              href={`/profile/${session.user.id}`}
               className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors duration-150 rounded-none"
             >
               <User className="w-4 h-4 text-muted-foreground" />

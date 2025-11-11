@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
 import { comments, postCategories, postLikes, posts } from "@/lib/db/schema/schema";
 import { eq } from "drizzle-orm";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { getAuthSession } from "@/lib/auth/authOptions";
 
 function generateSlug(title: string): string {
   return title
@@ -80,7 +79,7 @@ export async function GET(
 
     // Only return published posts or drafts if requested by author
     if (post.status === "draft") {
-      const session = await getServerSession(authOptions);
+      const session = await getAuthSession();
       if (!session || post.authorId !== session.user.id) {
         return NextResponse.json(
           { error: "Blog post not found" },
@@ -108,7 +107,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user) {
       return NextResponse.json(
@@ -168,7 +167,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user) {
       return NextResponse.json(
