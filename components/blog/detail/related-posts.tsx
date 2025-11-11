@@ -27,12 +27,12 @@ export function RelatedPosts({ relatedBlogs }: RelatedPostsProps) {
           >
             <BlogCard
               id={relatedBlog.slug}
+              authorId={relatedBlog.author.id}
               title={relatedBlog.title}
               excerpt={
                 relatedBlog.excerpt ||
-                relatedBlog.content
-                  .replace(/<[^>]*>/g, "")
-                  .substring(0, 150) + "..."
+                relatedBlog.content.replace(/<[^>]*>/g, "").substring(0, 150) +
+                  "..."
               }
               author={relatedBlog.author.name || "Anonymous"}
               date={formatDate(relatedBlog.createdAt)}

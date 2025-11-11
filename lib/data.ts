@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Blog, BlogPayload, Category } from "./types";
+import { Blog, BlogPayload, Category, UserProfileWithPosts, UpdateProfilePayload, FollowActionResponse } from "./types";
 import { User } from "next-auth";
 
 const apiClient = axios.create({
@@ -45,6 +45,11 @@ interface CategoriesResponse {
 interface CategoryResponse {
   success: true;
   category: Category;
+}
+
+interface UserProfileResponse {
+  success: true;
+  user: UserProfileWithPosts;
 }
 
 export const blogApi = {
@@ -194,22 +199,42 @@ export const authApi = {
 
 // User-related API functions
 export const userApi = {
-  getUserById: async (id: string): Promise<User> => {
+  getUserById: async (id: string): Promise<UserProfileWithPosts> => {
     try {
-      const response = await apiClient.get(`/users/${id}`);
-      return response.data;
+      const response = await apiClient.get<UserProfileResponse>(`/users/${id}`);
+      return response.data.user;
     } catch (error) {
       console.error(`Error fetching user with id ${id}:`, error);
       throw error;
     }
   },
 
-  updateUser: async (id: string, userData: Partial<User>): Promise<User> => {
+  updateUser: async (id: string, userData: UpdateProfilePayload): Promise<UserProfileWithPosts> => {
     try {
-      const response = await apiClient.put(`/users/${id}`, userData);
-      return response.data;
+      const response = await apiClient.put<UserProfileResponse>(`/users/${id}`, userData);
+      return response.data.user;
     } catch (error) {
       console.error(`Error updating user with id ${id}:`, error);
+      throw error;
+    }
+  },
+
+  followUser: async (userId: string): Promise<FollowActionResponse> => {
+    try {
+      const response = await apiClient.post<FollowActionResponse>(`/users/${userId}/follow`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error following user ${userId}:`, error);
+      throw error;
+    }
+  },
+
+  unfollowUser: async (userId: string): Promise<FollowActionResponse> => {
+    try {
+      const response = await apiClient.delete<FollowActionResponse>(`/users/${userId}/follow`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error unfollowing user ${userId}:`, error);
       throw error;
     }
   },

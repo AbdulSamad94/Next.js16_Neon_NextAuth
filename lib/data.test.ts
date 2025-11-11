@@ -97,24 +97,38 @@ describe('API Service', () => {
   describe('userApi', () => {
     test('getUserById makes GET request to /api/users/:id', async () => {
       const id = '1';
-      const mockResponse = { data: { id: '1', name: 'John Doe' } };
+      // FIX: Wrap the user data in a success response structure
+      const mockResponse = {
+        data: {
+          success: true,
+          user: { id: '1', name: 'John Doe' }
+        }
+      };
       require('axios').create().get.mockResolvedValue(mockResponse);
 
       const result = await userApi.getUserById(id);
 
       expect(require('axios').create().get).toHaveBeenCalledWith(`/users/${id}`);
+      // The function returns response.data.user, so we expect just the user object
       expect(result).toEqual({ id: '1', name: 'John Doe' });
     });
 
     test('updateUser makes PUT request to /api/users/:id', async () => {
       const id = '1';
       const userData = { name: 'Jane Doe' };
-      const mockResponse = { data: { id: '1', name: 'Jane Doe' } };
+      // FIX: Wrap the user data in a success response structure
+      const mockResponse = {
+        data: {
+          success: true,
+          user: { id: '1', name: 'Jane Doe' }
+        }
+      };
       require('axios').create().put.mockResolvedValue(mockResponse);
 
       const result = await userApi.updateUser(id, userData);
 
       expect(require('axios').create().put).toHaveBeenCalledWith(`/users/${id}`, userData);
+      // The function returns response.data.user, so we expect just the user object
       expect(result).toEqual({ id: '1', name: 'Jane Doe' });
     });
   });

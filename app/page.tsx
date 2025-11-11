@@ -7,7 +7,7 @@ import { BlogCard } from "@/components/blog/blog-card";
 import { ErrorState } from "@/components/shared/error-state";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { calculateReadTime, formatDate, extractTags } from "@/lib/utils";
+import { calculateReadTime, formatDate } from "@/lib/utils";
 import { Blog } from "@/lib/types";
 import { blogApi } from "@/lib/data";
 import { FeaturedBlogSkeleton } from "@/components/blog/featured-blog-skeleton";
@@ -108,8 +108,13 @@ export default function Home() {
                       .substring(0, 200) + "..."
                   }
                   author={featuredBlog.author.name || "Anonymous"}
+                  authorId={featuredBlog.author.id}
                   date={formatDate(featuredBlog.createdAt)}
-                  tags={featuredBlog.postCategories?.map(pc => pc.category.name) || []}
+                  tags={
+                    featuredBlog.postCategories?.map(
+                      (pc) => pc.category.name
+                    ) || []
+                  }
                   coverImage={
                     featuredBlog.coverImage ||
                     "/placeholder.svg?height=400&width=800"
@@ -140,8 +145,12 @@ export default function Home() {
                             .substring(0, 150) + "..."
                         }
                         author={blog.author.name || "Anonymous"}
+                        authorId={blog.author.id}
                         date={formatDate(blog.createdAt)}
-                        tags={blog.postCategories?.map(pc => pc.category.name) || []}
+                        tags={
+                          blog.postCategories?.map((pc) => pc.category.name) ||
+                          []
+                        }
                         coverImage={
                           blog.coverImage ||
                           "/placeholder.svg?height=400&width=600"

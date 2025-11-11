@@ -12,6 +12,7 @@ export function BlogCard({
   title,
   excerpt,
   author,
+  authorId,
   date,
   tags,
   coverImage,
@@ -19,9 +20,9 @@ export function BlogCard({
 }: BlogCardProps) {
   return (
     <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
-      <Link href={`/blog/${id}`}>
-        <article className="group cursor-pointer h-full flex flex-col">
-          <div className="overflow-hidden rounded-lg bg-secondary mb-4 aspect-video relative flex-shrink-0">
+      <article className="group h-full flex flex-col">
+        <Link href={`/blog/${id}`}>
+          <div className="overflow-hidden rounded-lg bg-secondary mb-4 aspect-video relative shrink-0">
             <BlogCoverImage
               src={coverImage || "/placeholder.svg"}
               alt={title}
@@ -29,24 +30,27 @@ export function BlogCard({
               className="group-hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <div className="flex-grow space-y-3">
-            <BlogTags tags={tags} />
-            <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition">
+        </Link>
+        <div className="grow space-y-3">
+          <BlogTags tags={tags} />
+          <Link href={`/blog/${id}`}>
+            <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition cursor-pointer">
               {title}
             </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {excerpt}
-            </p>
-            <BlogMetadata
-              authorName={author}
-              authorEmail={author} // Using author name as email for this component
-              authorImage={null}
-              createdAt={date}
-              readTime={readTime}
-            />
-          </div>
-        </article>
-      </Link>
+          </Link>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {excerpt}
+          </p>
+          <BlogMetadata
+            authorName={author}
+            authorEmail={author}
+            authorImage={null}
+            authorId={authorId}
+            createdAt={date}
+            readTime={readTime}
+          />
+        </div>
+      </article>
     </motion.div>
   );
 }

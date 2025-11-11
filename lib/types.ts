@@ -16,6 +16,9 @@ export interface Blog {
   status: string;
   createdAt: string;
   author: Author;
+  postCategories?: Array<{
+    category: Category;
+  }>;
 }
 
 // BlogCard specific props
@@ -24,6 +27,7 @@ export interface BlogCardProps {
   title: string;
   excerpt: string;
   author: string;
+  authorId: string; // Added for profile linking
   date: string;
   tags: string[];
   coverImage: string;
@@ -36,6 +40,7 @@ export interface FeaturedBlogProps {
   title: string;
   excerpt: string;
   author: string;
+  authorId: string; // Added for profile linking
   date: string;
   tags: string[];
   coverImage: string;
@@ -62,6 +67,7 @@ export interface BlogMetadataProps {
   authorName: string | null;
   authorEmail: string;
   authorImage: string | null;
+  authorId: string; // Added for profile linking
   createdAt: string;
   readTime: number;
   className?: string;
@@ -106,7 +112,6 @@ export interface RichTextEditorProps {
   onChange: (content: string) => void;
   disabled?: boolean;
 }
-
 
 // Common form state types
 export interface WithSavingState {
@@ -155,21 +160,44 @@ export type BlogPayload = {
   status?: "draft" | "published";
   coverImageBase64?: string;
   coverImageType?: string;
-  categoryIds?: string[]; // Add this
+  categoryIds?: string[];
 };
 
-// Update Blog interface to include categories
-export interface Blog {
+// ==================== USER PROFILE TYPES ====================
+
+export interface UserProfile {
   id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  coverImage: string | null;
-  status: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+  bio: string;
+  followerCount: number;
+  followingCount: number;
   createdAt: string;
-  author: Author;
-  postCategories?: Array<{ // Add this
-    category: Category;
-  }>;
+  isFollowing?: boolean; // For the current user's perspective
 }
+
+export interface UserProfileWithPosts extends UserProfile {
+  posts: Blog[];
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  bio?: string;
+  image?: string;
+}
+
+export interface FollowActionResponse {
+  success: boolean;
+  isFollowing: boolean;
+  followerCount: number;
+}
+
+export interface UserProfileState {
+  profile: UserProfileWithPosts | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// ==================== DATA SERVICE EXTENSIONS ====================
+// Add these functions to lib/data.ts
